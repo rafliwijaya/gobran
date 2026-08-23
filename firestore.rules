@@ -1,0 +1,125 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function me() { return get(/databases/$(database)/documents/users/$(request.auth.uid)).data; }
+    function admin() { return signedIn() && me().role == 'admin'; }
+    function verifiedPartner() {
+      return signedIn() && me().verification_status == 'approved' &&
+        me().role in ['driver', 'umkm', 'service'];
+    }
+    function onlyChanged(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    match /users/{uid} {
+      allow create: if signedIn() && request.auth.uid == uid &&
+        request.resource.data.role in ['customer', 'driver', 'umkm', 'service'];
+      allow read: if signedIn() && (request.auth.uid == uid || admin());
+      allow update: if admin() || (signedIn() && request.auth.uid == uid &&
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.verification_status == resource.data.verification_status);
+      allow delete: if admin();
+    }
+
+    match /drivers/{uid} {
+      allow read: if signedIn();
+      allow create: if signedIn() && request.auth.uid == uid;
+      allow update: if admin() ||
+        (signedIn() && request.auth.uid == uid && me().role == 'driver') ||
+        (signedIn() && me().role == 'customer' &&
+         request.resource.data.current_order_id == '' &&
+         resource.data.current_order_id != '' &&
+         get(/databases/$(database)/documents/orders/$(resource.data.current_order_id)).data.customer_id == request.auth.uid &&
+         request.resource.data.diff(resource.data).affectedKeys().hasOnly(['current_order_id']));
+      allow delete: if admin();
+    }
+
+    match /merchants/{uid} {
+      allow read: if true;
+      allow create: if signedIn() && request.auth.uid == uid;
+      allow update: if admin() || (signedIn() && request.auth.uid == uid && me().role == 'umkm');
+      allow delete: if admin();
+    }
+
+    match /service_partners/{uid} {
+      allow read: if true;
+      allow create: if signedIn() && request.auth.uid == uid;
+      allow update: if admin() || (signedIn() && request.auth.uid == uid && me().role == 'service');
+      allow delete: if admin();
+    }
+
+    match /products/{id} {
+      allow read: if true;
+      allow create: if verifiedPartner() && me().role == 'umkm' && request.resource.data.merchant_id == request.auth.uid;
+      allow update, delete: if admin() || (verifiedPartner() && me().role == 'umkm' && resource.data.merchant_id == request.auth.uid);
+    }
+
+    match /service_listings/{id} {
+      allow read: if true;
+      allow create: if verifiedPartner() && me().role == 'service' && request.resource.data.partner_id == request.auth.uid;
+      allow update, delete: if admin() || (verifiedPartner() && me().role == 'service' && resource.data.partner_id == request.auth.uid);
+    }
+
+    match /orders/{id} {
+      allow create: if signedIn() && me().role == 'customer' && request.resource.data.customer_id == request.auth.uid;
+      allow read: if admin() || (signedIn() && (
+        resource.data.customer_id == request.auth.uid ||
+        resource.data.driver_id == request.auth.uid ||
+        resource.data.merchant_id == request.auth.uid ||
+        resource.data.partner_id == request.auth.uid ||
+        (me().role == 'driver' && me().verification_status == 'approved' &&
+         resource.data.zone_id == me().zone_id && resource.data.status == 'searching')
+      ));
+      allow update: if admin() || (signedIn() && (
+        // Pelanggan: batalkan order, konfirmasi driver, atau tolak driver ke status searching
+        (resource.data.customer_id == request.auth.uid &&
+         request.resource.data.status in ['cancelled', 'driver_confirmed', 'searching'] &&
+         ((resource.data.status in ['searching', 'waiting_merchant', 'waiting_partner'] && request.resource.data.status == 'cancelled') ||
+          (resource.data.status == 'pending_confirmation' && request.resource.data.status in ['cancelled', 'driver_confirmed', 'searching']) ||
+          (resource.data.status == 'heading_to_pickup' && request.resource.data.status == 'cancelled')) &&
+         onlyChanged(['status', 'updated_at', 'confirmed_at', 'rejected_driver_ids', 'driver_id', 'driver_name', 'driver_phone', 'driver_photo_url'])) ||
+        
+        // Driver: mengambil order (searching -> pending_confirmation)
+        (me().role == 'driver' && me().verification_status == 'approved' &&
+         resource.data.zone_id == me().zone_id && resource.data.status == 'searching' &&
+         request.resource.data.driver_id == request.auth.uid && request.resource.data.status == 'pending_confirmation' &&
+         getAfter(/databases/$(database)/documents/drivers/$(request.auth.uid)).data.current_order_id == request.resource.id &&
+         onlyChanged(['driver_id', 'driver_name', 'driver_photo_url', 'driver_phone', 'status', 'accepted_at', 'updated_at'])) ||
+        
+        // Driver: melanjutkan update status perjalanan
+        (resource.data.driver_id == request.auth.uid &&
+         resource.data.status == 'pending_confirmation' &&
+         request.resource.data.status == 'searching' &&
+         onlyChanged(['driver_id', 'driver_name', 'driver_phone', 'driver_photo_url', 'status', 'updated_at'])) ||
+        (resource.data.driver_id == request.auth.uid &&
+         ((resource.data.status == 'driver_confirmed' && request.resource.data.status == 'heading_to_pickup') ||
+          (resource.data.status == 'heading_to_pickup' && request.resource.data.status == 'at_pickup') ||
+          (resource.data.status == 'at_pickup' && request.resource.data.status == 'on_delivery') ||
+          (resource.data.status == 'on_delivery' && request.resource.data.status == 'completed')) &&
+         onlyChanged(['status', 'updated_at', 'completed_at'])) ||
+         
+        (resource.data.merchant_id == request.auth.uid && me().role == 'umkm' &&
+         onlyChanged(['status', 'updated_at', 'completed_at'])) ||
+        (resource.data.partner_id == request.auth.uid && me().role == 'service' &&
+         onlyChanged(['status', 'updated_at', 'completed_at']))
+      ));
+      allow delete: if admin();
+    }
+
+    match /inbox/{id} {
+      allow create: if signedIn();
+      allow read, update: if signedIn() && (resource.data.user_id == request.auth.uid || admin());
+      allow delete: if admin();
+    }
+
+    match /content/{id} {
+      allow read: if resource.data.is_published == true || admin();
+      allow write: if admin();
+    }
+
+    match /emergency_contacts/{id} { allow read: if true; allow write: if admin(); }
+    match /zones/{id} { allow read: if true; allow write: if admin(); }
+    match /app_config/{id} { allow read: if true; allow write: if admin(); }
+  }
+}

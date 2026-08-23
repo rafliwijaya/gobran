@@ -1,0 +1,44 @@
+name: gobran
+description: Super-app lokal Kecamatan Babalan untuk ojek, express, makanan, jasa, dan darurat.
+publish_to: "none"
+version: 1.0.0+1
+
+environment:
+  sdk: ">=3.8.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: ^1.0.8
+  firebase_core: ^4.13.0
+  firebase_auth: ^6.5.7
+  cloud_firestore: ^6.8.0
+  firebase_storage: ^13.4.6
+  firebase_messaging: ^16.5.0
+  flutter_map: ^8.3.1
+  latlong2: ^0.10.1
+  geolocator: ^14.0.3
+  http: ^1.6.0
+  image_picker: ^1.2.3
+  url_launcher: ^6.3.2
+  intl: ^0.20.3
+  google_fonts: ^6.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.13.1
+
+flutter_launcher_icons:
+  android: "ic_launcher"
+  ios: false
+  image_path: "web/icons/logo-APK.jpg"
+  min_sdk_android: 21 # android min sdk value
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - web/icons/
+    - web/
