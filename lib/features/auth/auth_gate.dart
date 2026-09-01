@@ -37,7 +37,8 @@ class _SplashScreen extends StatefulWidget {
   State<_SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<_SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends State<_SplashScreen>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   late final Animation<double> _fadeIn;
   late final Animation<double> _scale;
@@ -45,9 +46,15 @@ class _SplashScreenState extends State<_SplashScreen> with SingleTickerProviderS
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1200),
+    );
     _fadeIn = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
-    _scale = Tween<double>(begin: 0.8, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
+    _scale = Tween<double>(
+      begin: 0.8,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.elasticOut));
     _controller.forward();
   }
 
@@ -91,7 +98,10 @@ class _SplashScreenState extends State<_SplashScreen> with SingleTickerProviderS
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(32),
-                      child: Image.asset('web/icons/loding.png', fit: BoxFit.cover),
+                      child: Image.asset(
+                        'web/icons/loding.png',
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 48),
@@ -100,7 +110,9 @@ class _SplashScreenState extends State<_SplashScreen> with SingleTickerProviderS
                     height: 32,
                     child: CircularProgressIndicator(
                       strokeWidth: 3.0,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white.withValues(alpha: 0.8)),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        Colors.white.withValues(alpha: 0.8),
+                      ),
                     ),
                   ),
                 ],
@@ -128,10 +140,16 @@ class _SignedInRouterState extends State<_SignedInRouter> {
     return StreamBuilder<AppUser?>(
       stream: FirestoreService().watchCurrentUser(),
       builder: (context, snapshot) {
-        if (snapshot.hasError) return _AccountProblem(message: '${snapshot.error}');
+        if (snapshot.hasError) {
+          return _AccountProblem(message: '${snapshot.error}');
+        }
         if (!snapshot.hasData) return const _SplashScreen();
         final user = snapshot.data;
-        if (user == null) return const _AccountProblem(message: 'Profil akun tidak ditemukan di Firestore.');
+        if (user == null) {
+          return const _AccountProblem(
+            message: 'Profil akun tidak ditemukan di Firestore.',
+          );
+        }
         if (!_notificationStarted) {
           _notificationStarted = true;
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -176,15 +194,22 @@ class VerificationWaitingScreen extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        rejected ? Icons.cancel_outlined : Icons.verified_user_outlined,
+                        rejected
+                            ? Icons.cancel_outlined
+                            : Icons.verified_user_outlined,
                         color: rejected ? AppColors.danger : AppColors.primary,
                         size: 72,
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        rejected ? 'Pendaftaran ditolak' : 'Menunggu verifikasi admin',
+                        rejected
+                            ? 'Pendaftaran ditolak'
+                            : 'Menunggu verifikasi admin',
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 23, fontWeight: FontWeight.w800),
+                        style: const TextStyle(
+                          fontSize: 23,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                       const SizedBox(height: 10),
                       Text(
@@ -224,11 +249,13 @@ class _AccountProblem extends StatelessWidget {
           children: [
             Text(message, textAlign: TextAlign.center),
             const SizedBox(height: 16),
-            ElevatedButton(onPressed: AuthService().signOut, child: const Text('Kembali ke login')),
+            ElevatedButton(
+              onPressed: AuthService().signOut,
+              child: const Text('Kembali ke login'),
+            ),
           ],
         ),
       ),
     ),
   );
 }
-

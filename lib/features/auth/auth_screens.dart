@@ -291,12 +291,13 @@ class _LoginScreenState extends State<LoginScreen> {
       await AuthService().signIn(email: _email.text, password: _password.text);
       if (mounted) Navigator.popUntil(context, (route) => route.isFirst);
     } on FirebaseAuthException catch (e) {
-      if (mounted)
+      if (mounted) {
         showMessage(
           context,
           e.message ?? 'Email atau password salah.',
           error: true,
         );
+      }
     } catch (e) {
       if (mounted) showMessage(context, '$e', error: true);
     } finally {
@@ -379,11 +380,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         return;
                       }
                       await AuthService().sendPasswordReset(_email.text);
-                      if (context.mounted)
+                      if (context.mounted) {
                         showMessage(
                           context,
                           'Tautan reset password telah dikirim.',
                         );
+                      }
                     },
                     child: const Text('Lupa password?'),
                   ),
@@ -478,8 +480,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await FirestoreService().updateRegistrationImages(widget.role, urls);
       if (mounted) Navigator.popUntil(context, (route) => route.isFirst);
     } on FirebaseAuthException catch (e) {
-      if (mounted)
+      if (mounted) {
         showMessage(context, e.message ?? 'Pendaftaran gagal.', error: true);
+      }
     } catch (e) {
       if (mounted) showMessage(context, '$e', error: true);
     } finally {
@@ -556,8 +559,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             style: TextStyle(color: Colors.grey),
                           );
                         }
-                        if (!zones.any((z) => z.id == _zoneId))
+                        if (!zones.any((z) => z.id == _zoneId)) {
                           _zoneId = zones.first.id;
+                        }
                         return DropdownButtonFormField<String>(
                           initialValue: _zoneId,
                           decoration: const InputDecoration(
@@ -620,7 +624,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
         _requiredField('plate_number', 'Nomor plat', Icons.pin_outlined),
         _imagePicker('face_url', 'Foto wajah (opsional)', required: false),
-        _imagePicker('identity_url', 'Foto KTP/STNK (opsional)', required: false),
+        _imagePicker(
+          'identity_url',
+          'Foto KTP/STNK (opsional)',
+          required: false,
+        ),
       ];
     }
     if (widget.role == AppRole.umkm) {
