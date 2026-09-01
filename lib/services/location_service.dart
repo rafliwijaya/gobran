@@ -60,8 +60,9 @@ class LocationService {
     final response = await http
         .get(uri, headers: _headers)
         .timeout(const Duration(seconds: 15));
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw Exception('Pencarian alamat sedang tidak tersedia.');
+    }
     final list = jsonDecode(response.body) as List;
     return list.map((raw) {
       final data = Map<String, dynamic>.from(raw as Map);
@@ -82,8 +83,9 @@ class LocationService {
     final response = await http
         .get(uri, headers: _headers)
         .timeout(const Duration(seconds: 15));
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       return '${point.latitude}, ${point.longitude}';
+    }
     final data = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
     return data['display_name'] ?? '${point.latitude}, ${point.longitude}';
   }
@@ -97,12 +99,14 @@ class LocationService {
     final response = await http
         .get(uri, headers: _headers)
         .timeout(const Duration(seconds: 20));
-    if (response.statusCode != 200)
+    if (response.statusCode != 200) {
       throw Exception('Rute jalan tidak dapat dihitung.');
+    }
     final data = Map<String, dynamic>.from(jsonDecode(response.body) as Map);
     final routes = data['routes'] as List? ?? [];
-    if (routes.isEmpty)
+    if (routes.isEmpty) {
       throw Exception('Tidak ditemukan rute antara kedua lokasi.');
+    }
     final first = Map<String, dynamic>.from(routes.first as Map);
     final geometry = Map<String, dynamic>.from(first['geometry'] as Map);
     final coordinatesList = geometry['coordinates'] as List? ?? [];
@@ -127,8 +131,9 @@ class LocationService {
       'travelmode': 'two-wheeler',
       'dir_action': 'navigate',
     };
-    if (origin != null)
+    if (origin != null) {
       params['origin'] = '${origin.latitude},${origin.longitude}';
+    }
     if (waypoints.isNotEmpty) {
       params['waypoints'] = waypoints
           .map((point) => '${point.latitude},${point.longitude}')

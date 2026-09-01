@@ -1867,11 +1867,13 @@ class _DriverOrderDetailScreenState extends State<DriverOrderDetailScreen> {
     body: StreamBuilder<AppOrder?>(
       stream: FirestoreService().watchOrder(widget.orderId),
       builder: (context, snapshot) {
-        if (!snapshot.hasData)
+        if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
+        }
         final order = snapshot.data;
-        if (order == null)
+        if (order == null) {
           return const Center(child: Text('Order tidak ditemukan.'));
+        }
 
         // Deteksi: driver ini telah ditolak oleh pelanggan
         final myUid = FirestoreService().uid;
@@ -2153,8 +2155,9 @@ class _DriverOrderDetailScreenState extends State<DriverOrderDetailScreen> {
                           );
                           if (context.mounted) Navigator.pop(context);
                         } catch (error) {
-                          if (context.mounted)
+                          if (context.mounted) {
                             showMessage(context, '$error', error: true);
+                          }
                         }
                       },
                       icon: const Icon(Icons.undo),

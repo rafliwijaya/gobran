@@ -23,7 +23,12 @@ class _UmkmDashboardState extends State<UmkmDashboard> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       title: Text(widget.user.extra['business_name'] ?? 'Dashboard UMKM'),
-      actions: [IconButton(onPressed: AuthService().signOut, icon: const Icon(Icons.logout))],
+      actions: [
+        IconButton(
+          onPressed: AuthService().signOut,
+          icon: const Icon(Icons.logout),
+        ),
+      ],
     ),
     body: StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
       stream: FirestoreService().watchMerchantProfile(),
@@ -39,22 +44,51 @@ class _UmkmDashboardState extends State<UmkmDashboard> {
               Container(
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(color: _open ? const Color(0xFFE8F7F0) : Colors.white, borderRadius: BorderRadius.circular(18)),
-                child: Row(children: [
-                  Icon(_open ? Icons.storefront : Icons.storefront_outlined, color: const Color(0xFF087F5B), size: 32),
-                  const SizedBox(width: 12),
-                  Expanded(child: Text(_open ? 'Toko sedang buka' : 'Toko sedang tutup', style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900))),
-                  Switch(
-                    value: _open,
-                    onChanged: (value) async {
-                      await FirestoreService().setMerchantOpen(value);
-                      if (mounted) setState(() => _open = value);
-                    },
-                  ),
-                ]),
+                decoration: BoxDecoration(
+                  color: _open ? const Color(0xFFE8F7F0) : Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      _open ? Icons.storefront : Icons.storefront_outlined,
+                      color: const Color(0xFF087F5B),
+                      size: 32,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _open ? 'Toko sedang buka' : 'Toko sedang tutup',
+                        style: const TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                    Switch(
+                      value: _open,
+                      onChanged: (value) async {
+                        await FirestoreService().setMerchantOpen(value);
+                        if (mounted) setState(() => _open = value);
+                      },
+                    ),
+                  ],
+                ),
               ),
-              const TabBar(tabs: [Tab(text: 'Pesanan Masuk'), Tab(text: 'Kelola Produk')]),
-              Expanded(child: TabBarView(children: [const _MerchantOrders(), _ProductManager(user: widget.user)])),
+              const TabBar(
+                tabs: [
+                  Tab(text: 'Pesanan Masuk'),
+                  Tab(text: 'Kelola Produk'),
+                ],
+              ),
+              Expanded(
+                child: TabBarView(
+                  children: [
+                    const _MerchantOrders(),
+                    _ProductManager(user: widget.user),
+                  ],
+                ),
+              ),
             ],
           ),
         );
@@ -75,7 +109,7 @@ class _MerchantOrders extends StatelessWidget {
       builder: (items) => ListView.separated(
         padding: const EdgeInsets.all(16),
         itemCount: items.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
           final order = items[index];
           final next = _next(order.status);
@@ -85,21 +119,45 @@ class _MerchantOrders extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Row(children: [
-                    Expanded(child: Text(order.customerName, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w900))),
-                    StatusPill(order.status),
-                  ]),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          order.customerName,
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
+                      ),
+                      StatusPill(order.status),
+                    ],
+                  ),
                   const SizedBox(height: 8),
-                  ...order.items.map((item) => Text('${item['quantity']}× ${item['name']}')),
+                  ...order.items.map(
+                    (item) => Text('${item['quantity']}× ${item['name']}'),
+                  ),
                   const Divider(),
                   Text('Antar ke: ${order.destination.address}'),
-                  if (order.destination.note.isNotEmpty) Text('Catatan: ${order.destination.note}'),
+                  if (order.destination.note.isNotEmpty)
+                    Text('Catatan: ${order.destination.note}'),
                   const SizedBox(height: 8),
-                  Text(rupiah(order.fare), textAlign: TextAlign.right, style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18)),
+                  Text(
+                    rupiah(order.fare),
+                    textAlign: TextAlign.right,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w900,
+                      fontSize: 18,
+                    ),
+                  ),
                   if (next != null) ...[
                     const SizedBox(height: 10),
                     ElevatedButton(
-                      onPressed: () => FirestoreService().updateOrderStatus(order, next.$1, message: next.$3),
+                      onPressed: () => FirestoreService().updateOrderStatus(
+                        order,
+                        next.$1,
+                        message: next.$3,
+                      ),
                       child: Text(next.$2),
                     ),
                   ],
@@ -113,8 +171,16 @@ class _MerchantOrders extends StatelessWidget {
   );
 
   (String, String, String)? _next(String status) => switch (status) {
-    'waiting_merchant' => ('preparing', 'Terima & mulai siapkan', 'Pesanan diterima UMKM dan sedang disiapkan.'),
-    'preparing' => ('searching', 'Pesanan siap • Cari driver', 'Pesanan sudah siap. GoBran sedang mencari driver pengantar.'),
+    'waiting_merchant' => (
+      'preparing',
+      'Terima & mulai siapkan',
+      'Pesanan diterima UMKM dan sedang disiapkan.',
+    ),
+    'preparing' => (
+      'searching',
+      'Pesanan siap • Cari driver',
+      'Pesanan sudah siap. GoBran sedang mencari driver pengantar.',
+    ),
     _ => null,
   };
 }
@@ -130,31 +196,52 @@ class _ProductManager extends StatelessWidget {
         builder: (context, snapshot) => AsyncView<List<Product>>(
           snapshot: snapshot,
           builder: (items) => items.isEmpty
-              ? const Center(child: Text('Belum ada produk. Tekan + untuk menambahkan.'))
+              ? const Center(
+                  child: Text('Belum ada produk. Tekan + untuk menambahkan.'),
+                )
               : ListView.separated(
                   padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
                   itemCount: items.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
+                  separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
                     final product = items[index];
                     return Card(
                       clipBehavior: Clip.antiAlias,
                       child: ListTile(
                         contentPadding: const EdgeInsets.all(10),
-                        leading: ClipRRect(borderRadius: BorderRadius.circular(10), child: NetworkImageBox(url: product.imageUrl, width: 68, height: 68)),
-                        title: Text(product.name, style: const TextStyle(fontWeight: FontWeight.w900)),
-                        subtitle: Text('${rupiah(product.price)} • Stok ${product.stock}'),
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: NetworkImageBox(
+                            url: product.imageUrl,
+                            width: 68,
+                            height: 68,
+                          ),
+                        ),
+                        title: Text(
+                          product.name,
+                          style: const TextStyle(fontWeight: FontWeight.w900),
+                        ),
+                        subtitle: Text(
+                          '${rupiah(product.price)} • Stok ${product.stock}',
+                        ),
                         trailing: PopupMenuButton<String>(
                           onSelected: (value) {
                             if (value == 'edit') {
-                              _showProductEditor(context, user, product: product);
+                              _showProductEditor(
+                                context,
+                                user,
+                                product: product,
+                              );
                             } else {
                               FirestoreService().deleteProduct(product.id);
                             }
                           },
                           itemBuilder: (_) => const [
                             PopupMenuItem(value: 'edit', child: Text('Edit')),
-                            PopupMenuItem(value: 'delete', child: Text('Hapus')),
+                            PopupMenuItem(
+                              value: 'delete',
+                              child: Text('Hapus'),
+                            ),
                           ],
                         ),
                       ),
@@ -177,7 +264,11 @@ class _ProductManager extends StatelessWidget {
   );
 }
 
-Future<void> _showProductEditor(BuildContext context, AppUser user, {Product? product}) async {
+Future<void> _showProductEditor(
+  BuildContext context,
+  AppUser user, {
+  Product? product,
+}) async {
   final name = TextEditingController(text: product?.name);
   final description = TextEditingController(text: product?.description);
   final category = TextEditingController(text: product?.category);
@@ -195,53 +286,103 @@ Future<void> _showProductEditor(BuildContext context, AppUser user, {Product? pr
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(controller: name, decoration: const InputDecoration(labelText: 'Nama produk')),
+              TextField(
+                controller: name,
+                decoration: const InputDecoration(labelText: 'Nama produk'),
+              ),
               const SizedBox(height: 9),
-              TextField(controller: description, maxLines: 2, decoration: const InputDecoration(labelText: 'Deskripsi')),
+              TextField(
+                controller: description,
+                maxLines: 2,
+                decoration: const InputDecoration(labelText: 'Deskripsi'),
+              ),
               const SizedBox(height: 9),
-              TextField(controller: category, decoration: const InputDecoration(labelText: 'Kategori')),
+              TextField(
+                controller: category,
+                decoration: const InputDecoration(labelText: 'Kategori'),
+              ),
               const SizedBox(height: 9),
-              TextField(controller: price, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Harga')),
+              TextField(
+                controller: price,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Harga'),
+              ),
               const SizedBox(height: 9),
-              TextField(controller: stock, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Stok')),
+              TextField(
+                controller: stock,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Stok'),
+              ),
               const SizedBox(height: 9),
               OutlinedButton.icon(
                 onPressed: () async {
-                  final selected = await ImagePicker().pickImage(source: ImageSource.gallery, imageQuality: 80, maxWidth: 1600);
+                  final selected = await ImagePicker().pickImage(
+                    source: ImageSource.gallery,
+                    imageQuality: 80,
+                    maxWidth: 1600,
+                  );
                   if (selected != null) setState(() => image = selected);
                 },
                 icon: const Icon(Icons.add_photo_alternate_outlined),
-                label: Text(image?.name ?? (product?.imageUrl.isNotEmpty == true ? 'Ganti foto' : 'Pilih foto')),
+                label: Text(
+                  image?.name ??
+                      (product?.imageUrl.isNotEmpty == true
+                          ? 'Ganti foto'
+                          : 'Pilih foto'),
+                ),
               ),
             ],
           ),
         ),
         actions: [
-          TextButton(onPressed: loading ? null : () => Navigator.pop(dialogContext), child: const Text('Batal')),
+          TextButton(
+            onPressed: loading ? null : () => Navigator.pop(dialogContext),
+            child: const Text('Batal'),
+          ),
           FilledButton(
-            onPressed: loading ? null : () async {
-              if (name.text.trim().isEmpty || int.tryParse(price.text) == null || int.tryParse(stock.text) == null) return;
-              setState(() => loading = true);
-              try {
-                var imageUrl = product?.imageUrl ?? '';
-                if (image != null) imageUrl = await FirestoreService().uploadImage(image!, 'products/${user.id}');
-                await FirestoreService().saveProduct(
-                  id: product?.id,
-                  merchantName: user.extra['business_name'] ?? user.name,
-                  name: name.text,
-                  description: description.text,
-                  category: category.text.isEmpty ? 'Lainnya' : category.text,
-                  price: int.parse(price.text),
-                  stock: int.parse(stock.text),
-                  imageUrl: imageUrl,
-                );
-                if (dialogContext.mounted) Navigator.pop(dialogContext);
-              } catch (e) {
-                if (context.mounted) showMessage(context, '$e', error: true);
-                setState(() => loading = false);
-              }
-            },
-            child: loading ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator()) : const Text('Simpan'),
+            onPressed: loading
+                ? null
+                : () async {
+                    if (name.text.trim().isEmpty ||
+                        int.tryParse(price.text) == null ||
+                        int.tryParse(stock.text) == null) {
+                      return;
+                    }
+                    setState(() => loading = true);
+                    try {
+                      var imageUrl = product?.imageUrl ?? '';
+                      if (image != null) {
+                        imageUrl = await FirestoreService().uploadImage(
+                          image!,
+                          'products/${user.id}',
+                        );
+                      }
+                      await FirestoreService().saveProduct(
+                        id: product?.id,
+                        merchantName: user.extra['business_name'] ?? user.name,
+                        name: name.text,
+                        description: description.text,
+                        category: category.text.isEmpty
+                            ? 'Lainnya'
+                            : category.text,
+                        price: int.parse(price.text),
+                        stock: int.parse(stock.text),
+                        imageUrl: imageUrl,
+                      );
+                      if (dialogContext.mounted) Navigator.pop(dialogContext);
+                    } catch (e) {
+                      if (context.mounted) {
+                        showMessage(context, '$e', error: true);
+                      }
+                      setState(() => loading = false);
+                    }
+                  },
+            child: loading
+                ? const SizedBox.square(
+                    dimension: 20,
+                    child: CircularProgressIndicator(),
+                  )
+                : const Text('Simpan'),
           ),
         ],
       ),
@@ -253,4 +394,3 @@ Future<void> _showProductEditor(BuildContext context, AppUser user, {Product? pr
   price.dispose();
   stock.dispose();
 }
-

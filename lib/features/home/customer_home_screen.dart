@@ -7,7 +7,6 @@ import '../../core/formatters.dart';
 import '../../models/app_models.dart';
 import '../../services/firestore_service.dart';
 import '../content/content_screens.dart';
-import '../emergency/emergency_screen.dart';
 import '../food/food_screens.dart';
 import '../order/order_flow_screen.dart';
 import '../service/service_marketplace_screen.dart';
@@ -475,13 +474,10 @@ class _ServiceMenu extends StatelessWidget {
 }
 
 class _ServiceIcon extends StatelessWidget {
-  const _ServiceIcon({
-    this.imagePath,
-    this.icon,
-    required this.label,
-    required this.onTap,
-    this.iconColor,
-  });
+  const _ServiceIcon({this.imagePath, required this.label, required this.onTap})
+    : icon = null,
+      iconColor = null;
+
   final String? imagePath;
   final IconData? icon;
   final String label;
@@ -595,7 +591,7 @@ class _RecommendationSection extends StatelessWidget {
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: items.length,
-                separatorBuilder: (_, __) => const SizedBox(width: 12),
+                separatorBuilder: (_, _) => const SizedBox(width: 12),
                 itemBuilder: (context, index) {
                   final product = items[index];
                   return _ProductCard(product: product, user: user);

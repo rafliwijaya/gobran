@@ -123,7 +123,7 @@ class NetworkImageBox extends StatelessWidget {
       height: height,
       width: width,
       fit: BoxFit.cover,
-      errorBuilder: (_, __, ___) => Container(
+      errorBuilder: (_, _, _) => Container(
         height: height,
         width: width,
         color: const Color(0xFFE8EFEC),
