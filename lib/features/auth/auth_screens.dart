@@ -1,7 +1,9 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/app_theme.dart';
 import '../../core/common_widgets.dart';
 import '../../models/app_models.dart';
 import '../../services/auth_service.dart';
@@ -49,7 +51,7 @@ class WelcomeScreen extends StatelessWidget {
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(40),
                       child: Image.asset(
-                        'web/icons/loding.png',
+                        'web/icons/bran.jpeg',
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -65,8 +67,8 @@ class WelcomeScreen extends StatelessWidget {
                   // Button Pelanggan
                   ElevatedButton.icon(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00880F),
-                      foregroundColor: Colors.white,
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: AppColors.ink,
                       minimumSize: const Size.fromHeight(56),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -74,7 +76,11 @@ class WelcomeScreen extends StatelessWidget {
                       elevation: 0,
                     ),
                     onPressed: () => _openRegister(context, AppRole.customer),
-                    icon: const Icon(Icons.person_outline, size: 22),
+                    icon: const Icon(
+                      Symbols.person_rounded,
+                      fill: 1,
+                      size: 22,
+                    ),
                     label: const FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
@@ -91,9 +97,9 @@ class WelcomeScreen extends StatelessWidget {
                   // Button Mitra
                   OutlinedButton.icon(
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: const Color(0xFF00880F),
+                      foregroundColor: AppColors.primaryDark,
                       side: const BorderSide(
-                        color: Color(0xFF00880F),
+                        color: AppColors.primaryDark,
                         width: 1.8,
                       ),
                       minimumSize: const Size.fromHeight(56),
@@ -102,7 +108,11 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                     ),
                     onPressed: () => _showPartnerChoices(context),
-                    icon: const Icon(Icons.handshake_outlined, size: 22),
+                    icon: const Icon(
+                      Symbols.handshake_rounded,
+                      fill: 1,
+                      size: 22,
+                    ),
                     label: const FittedBox(
                       fit: BoxFit.scaleDown,
                       child: Text(
@@ -133,7 +143,7 @@ class WelcomeScreen extends StatelessWidget {
                         child: const Text(
                           'Masuk',
                           style: TextStyle(
-                            color: Color(0xFF00880F),
+                            color: AppColors.primaryDark,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
@@ -187,7 +197,7 @@ class WelcomeScreen extends StatelessWidget {
                 role: AppRole.driver,
                 title: 'Mitra Driver',
                 subtitle: 'Gabung menjadi ojek online atau pengiriman barang',
-                icon: Icons.two_wheeler,
+                icon: Symbols.moped_rounded,
                 color: const Color(0xFF2563EB),
               ),
               const SizedBox(height: 12),
@@ -197,7 +207,7 @@ class WelcomeScreen extends StatelessWidget {
                 role: AppRole.umkm,
                 title: 'Mitra UMKM',
                 subtitle: 'Jual produk makanan, minuman, dan kuliner lokal',
-                icon: Icons.storefront_outlined,
+                icon: Symbols.storefront_rounded,
                 color: const Color(0xFFF59E0B),
               ),
               const SizedBox(height: 12),
@@ -207,7 +217,7 @@ class WelcomeScreen extends StatelessWidget {
                 role: AppRole.service,
                 title: 'Mitra Jasa',
                 subtitle: 'Tawarkan jasa servis, perbaikan, atau keterampilan',
-                icon: Icons.home_repair_service_outlined,
+                icon: Symbols.home_repair_service_rounded,
                 color: const Color(0xFF8B5CF6),
               ),
             ],
@@ -429,8 +439,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Future<void> _pick(String key) async {
     final file = await _picker.pickImage(
       source: ImageSource.gallery,
-      imageQuality: 78,
-      maxWidth: 1600,
+      imageQuality: 58,
+      maxWidth: 720,
     );
     if (file != null) setState(() => _images[key] = file);
   }
@@ -616,7 +626,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
     if (widget.role == AppRole.driver) {
       return [
-        _requiredField('vehicle_type', 'Jenis kendaraan', Icons.two_wheeler),
+        _requiredField(
+          'vehicle_type',
+          'Jenis kendaraan',
+          Symbols.moped_rounded,
+        ),
         _requiredField(
           'vehicle_brand',
           'Merek kendaraan',

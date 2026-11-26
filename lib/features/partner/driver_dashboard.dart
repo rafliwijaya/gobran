@@ -4,7 +4,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/app_theme.dart';
 import '../../core/common_widgets.dart';
 import '../../core/formatters.dart';
 import '../../models/app_models.dart';
@@ -13,10 +15,10 @@ import '../../services/firestore_service.dart';
 import '../../services/location_service.dart';
 
 // ─── Warna tema driver ───────────────────────────────────────────
-const _kGreen = Color(0xFF00880F);
-const _kGreenLight = Color(0xFFF0FDF4);
+const _kGreen = AppColors.primaryDark;
+const _kGreenLight = AppColors.primaryLight;
 const _kRed = Color(0xFFD92D20);
-const _kBg = Color(0xFFF5F5F5);
+const _kBg = AppColors.background;
 
 // ─── Shell dengan bottom navbar ──────────────────────────────────
 class DriverDashboard extends StatefulWidget {
@@ -114,29 +116,29 @@ class _DriverNavBar extends StatelessWidget {
           child: Row(
             children: [
               _NavItem(
-                icon: Icons.home_outlined,
-                activeIcon: Icons.home,
+                icon: Symbols.home_rounded,
+                activeIcon: Symbols.home_rounded,
                 label: 'Beranda',
                 selected: index == 0,
                 onTap: () => onTap(0),
               ),
               _NavItem(
-                icon: Icons.receipt_long_outlined,
-                activeIcon: Icons.receipt_long,
+                icon: Symbols.receipt_long_rounded,
+                activeIcon: Symbols.receipt_long_rounded,
                 label: 'Riwayat',
                 selected: index == 1,
                 onTap: () => onTap(1),
               ),
               _NavItem(
-                icon: Icons.bar_chart_outlined,
-                activeIcon: Icons.bar_chart,
+                icon: Symbols.bar_chart_rounded,
+                activeIcon: Symbols.bar_chart_rounded,
                 label: 'Rekap',
                 selected: index == 2,
                 onTap: () => onTap(2),
               ),
               _NavItem(
-                icon: Icons.person_outline,
-                activeIcon: Icons.person,
+                icon: Symbols.person_rounded,
+                activeIcon: Symbols.person_rounded,
                 label: 'Akun',
                 selected: index == 3,
                 onTap: () => onTap(3),
@@ -173,6 +175,7 @@ class _NavItem extends StatelessWidget {
           children: [
             Icon(
               selected ? activeIcon : icon,
+              fill: selected ? 1 : 0,
               color: selected ? _kGreen : Colors.grey,
               size: 24,
             ),
@@ -231,7 +234,8 @@ class _HomeTab extends StatelessWidget {
                         radius: 22,
                         backgroundColor: Colors.white.withValues(alpha: 0.2),
                         child: const Icon(
-                          Icons.two_wheeler,
+                          Symbols.moped_rounded,
+                          fill: 1,
                           color: Colors.white,
                           size: 24,
                         ),
@@ -505,10 +509,11 @@ class _OfflineEmptyState extends StatelessWidget {
                 color: Colors.grey.shade100,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                Icons.moped_outlined,
+              child: const Icon(
+                Symbols.moped_rounded,
+                fill: 1,
                 size: 52,
-                color: Colors.grey.shade400,
+                color: Colors.grey,
               ),
             ),
             const SizedBox(height: 20),
@@ -553,9 +558,11 @@ class _OpenOrders extends StatelessWidget {
               final isActive =
                   order != null &&
                   const [
+                    'pending_confirmation',
                     'accepted',
                     'driver_confirmed',
                     'heading_to_pickup',
+                    'at_pickup',
                     'picked_up',
                     'on_delivery',
                   ].contains(order.status);
@@ -608,7 +615,12 @@ class _OpenOrdersList extends StatelessWidget {
             ),
             Expanded(
               child: ListView.separated(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
+                padding: EdgeInsets.fromLTRB(
+                  16,
+                  4,
+                  16,
+                  24 + bottomSystemInset(context),
+                ),
                 itemCount: items.length,
                 separatorBuilder: (context, index) =>
                     const SizedBox(height: 12),
@@ -647,7 +659,11 @@ class _ActiveOrderOnly extends StatelessWidget {
             const SizedBox(height: 12),
             Card(
               child: ListTile(
-                leading: const Icon(Icons.two_wheeler, color: _kGreen),
+                leading: const Icon(
+                  Symbols.moped_rounded,
+                  fill: 1,
+                  color: _kGreen,
+                ),
                 title: Text(
                   order.destination.address,
                   maxLines: 2,
@@ -682,9 +698,9 @@ class _OrderCard extends StatelessWidget {
   final AppUser user;
 
   IconData get _serviceIcon => switch (order.serviceType) {
-    'food' => Icons.restaurant_rounded,
-    'ojek' => Icons.two_wheeler_rounded,
-    _ => Icons.local_shipping_rounded,
+    'food' => Symbols.restaurant_rounded,
+    'ojek' => Symbols.moped_rounded,
+    _ => Symbols.local_shipping_rounded,
   };
 
   Color get _serviceColor => switch (order.serviceType) {
@@ -821,7 +837,7 @@ class _OrderCard extends StatelessWidget {
                       ),
                       icon: const Icon(Icons.check_circle_outline, size: 16),
                       label: const Text(
-                        'Terima',
+                        'Terima Pesanan',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 13,
@@ -973,7 +989,12 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
       maxChildSize: 0.95,
       builder: (context, controller) => ListView(
         controller: controller,
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 30),
+        padding: EdgeInsets.fromLTRB(
+          20,
+          0,
+          20,
+          30 + bottomSystemInset(context),
+        ),
         children: [
           // Header
           Row(
@@ -1047,7 +1068,8 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
                               width: 38,
                               height: 38,
                               child: const Icon(
-                                Icons.two_wheeler,
+                                Symbols.moped_rounded,
+                                fill: 1,
                                 size: 32,
                                 color: Color(0xFF2563EB),
                               ),
@@ -1084,7 +1106,7 @@ class _OrderDetailSheetState extends State<_OrderDetailSheet> {
           _InfoCard(
             children: [
               _InfoRow(
-                Icons.two_wheeler,
+                Symbols.moped_rounded,
                 'Posisi Driver Saat Ini',
                 const Color(0xFF2563EB),
                 _driverPoint != null
@@ -1363,8 +1385,9 @@ class _HistoryTab extends StatelessWidget {
                             ),
                             child: Icon(
                               order.serviceType == 'food'
-                                  ? Icons.restaurant
-                                  : Icons.two_wheeler,
+                                  ? Symbols.restaurant_rounded
+                                  : Symbols.moped_rounded,
+                              fill: 1,
                               color: _kGreen,
                               size: 20,
                             ),
@@ -1449,6 +1472,13 @@ class _RekapTab extends StatelessWidget {
               0,
               (total, e) => total + e.fare,
             );
+            final netIncome = completed.fold<int>(0, (total, e) {
+              if (e.serviceType == 'food') {
+                return total + ((e.meta['delivery_fare'] as num?)?.toInt() ?? 0);
+              }
+              return total + e.fare;
+            });
+            final merchantPayTotal = totalIncome - netIncome;
             final cashIncome = completed
                 .where((e) => e.paymentMethod == 'cash')
                 .fold<int>(0, (s, e) => s + e.fare);
@@ -1457,14 +1487,19 @@ class _RekapTab extends StatelessWidget {
                 .fold<int>(0, (s, e) => s + e.fare);
 
             return ListView(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.fromLTRB(
+                16,
+                16,
+                16,
+                24 + bottomSystemInset(context),
+              ),
               children: [
-                // Kartu total pendapatan utama
+                // Kartu pendapatan bersih & total pendapatan utama
                 Container(
                   padding: const EdgeInsets.all(22),
                   decoration: BoxDecoration(
                     gradient: const LinearGradient(
-                      colors: [_kGreen, Color(0xFF005F09)],
+                      colors: [_kGreen, Color(0xFF4F7A0D)],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -1473,16 +1508,16 @@ class _RekapTab extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Row(
+                      const Row(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.account_balance_wallet_outlined,
                             color: Colors.white70,
                             size: 18,
                           ),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'Total Pendapatan',
+                          SizedBox(width: 6),
+                          Text(
+                            'Pendapatan Bersih (Ongkir)',
                             style: TextStyle(
                               color: Colors.white70,
                               fontSize: 13,
@@ -1492,11 +1527,20 @@ class _RekapTab extends StatelessWidget {
                       ),
                       const SizedBox(height: 8),
                       Text(
-                        rupiah(totalIncome),
+                        rupiah(netIncome),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 32,
                           fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Total Diterima (Kotor): ${rupiah(totalIncome)}',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 14),
@@ -1525,11 +1569,11 @@ class _RekapTab extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Breakdown per metode bayar
+                // Breakdown pendapatan bersih & metode bayar
                 _InfoCard(
                   children: [
                     const Text(
-                      'Rincian Pembayaran',
+                      'Rincian Pendapatan & Pembayaran',
                       style: TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
@@ -1537,15 +1581,29 @@ class _RekapTab extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     _RekapRow(
+                      Symbols.delivery_dining_rounded,
+                      'Pendapatan Bersih (Ongkir)',
+                      netIncome,
+                      _kGreen,
+                    ),
+                    const SizedBox(height: 8),
+                    _RekapRow(
+                      Symbols.storefront_rounded,
+                      'Dibayar ke Toko UMKM',
+                      merchantPayTotal,
+                      const Color(0xFFE67E00),
+                    ),
+                    const Divider(height: 20),
+                    _RekapRow(
                       Icons.payments_outlined,
-                      'Pembayaran Tunai',
+                      'Total Pembayaran Tunai',
                       cashIncome,
                       const Color(0xFF16A34A),
                     ),
                     const SizedBox(height: 8),
                     _RekapRow(
                       Icons.qr_code_2,
-                      'Pembayaran QRIS',
+                      'Total Pembayaran QRIS',
                       qrisIncome,
                       const Color(0xFF2563EB),
                     ),
@@ -1695,96 +1753,198 @@ class _AccountTab extends StatelessWidget {
         automaticallyImplyLeading: false,
         elevation: 0,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                ),
-              ],
+      body: StreamBuilder<List<AppZone>>(
+        stream: FirestoreService().watchZones(),
+        builder: (context, snapshot) {
+          final zones = snapshot.data ?? const <AppZone>[];
+          final activeZoneName = zones
+              .where((z) => z.id == user.zoneId)
+              .map((z) => z.name)
+              .firstOrNull ??
+              user.zoneId;
+          return ListView(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              20,
+              20,
+              24 + bottomSystemInset(context),
             ),
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 36,
-                  backgroundColor: _kGreenLight,
-                  child: Text(
-                    user.name.isNotEmpty ? user.name[0].toUpperCase() : 'D',
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: _kGreen,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.04),
+                      blurRadius: 10,
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 12),
-                Text(
-                  user.name,
-                  style: const TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(user.phone, style: TextStyle(color: Colors.grey.shade600)),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 4,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _kGreenLight,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    'Driver · Zona ${user.zoneId}',
-                    style: const TextStyle(
-                      color: _kGreen,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 12,
+                child: Column(
+                  children: [
+                    CircleAvatar(
+                      radius: 36,
+                      backgroundColor: _kGreenLight,
+                      child: Text(
+                        user.name.isNotEmpty ? user.name[0].toUpperCase() : 'D',
+                        style: const TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: _kGreen,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
-          _MenuTile(Icons.help_outline, 'Bantuan & FAQ', () {}),
-          _MenuTile(Icons.info_outline, 'Tentang GoBran', () {}),
-          const SizedBox(height: 8),
-          _MenuTile(Icons.logout, 'Keluar', () async {
-            final confirmed = await showDialog<bool>(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text('Keluar'),
-                content: const Text('Yakin ingin keluar dari akun?'),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('Batal'),
-                  ),
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: _kRed,
-                      foregroundColor: Colors.white,
+                    const SizedBox(height: 12),
+                    Text(
+                      user.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                    onPressed: () => Navigator.pop(ctx, true),
-                    child: const Text('Keluar'),
-                  ),
-                ],
+                    const SizedBox(height: 4),
+                    Text(
+                      user.phone,
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _kGreenLight,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        'Driver · Zona $activeZoneName',
+                        style: const TextStyle(
+                          color: _kGreen,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            );
-            if (confirmed == true) await AuthService().signOut();
-          }, color: _kRed),
-        ],
+              const SizedBox(height: 20),
+              _MenuTile(
+                Symbols.location_on_rounded,
+                'Ganti Zona ($activeZoneName)',
+                () => _showZonePicker(context, zones),
+              ),
+              _MenuTile(Icons.help_outline, 'Bantuan & FAQ', () {}),
+              _MenuTile(Icons.info_outline, 'Tentang GoBran', () {}),
+              const SizedBox(height: 8),
+              _MenuTile(Icons.logout, 'Keluar', () async {
+                final confirmed = await showDialog<bool>(
+                  context: context,
+                  builder: (ctx) => AlertDialog(
+                    title: const Text('Keluar'),
+                    content: const Text('Yakin ingin keluar dari akun?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(ctx, false),
+                        child: const Text('Batal'),
+                      ),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: _kRed,
+                          foregroundColor: Colors.white,
+                        ),
+                        onPressed: () => Navigator.pop(ctx, true),
+                        child: const Text('Keluar'),
+                      ),
+                    ],
+                  ),
+                );
+                if (confirmed == true) await AuthService().signOut();
+              }, color: _kRed),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Future<void> _showZonePicker(
+    BuildContext context,
+    List<AppZone> zones,
+  ) async {
+    if (zones.isEmpty) {
+      showMessage(
+        context,
+        'Daftar zona belum tersedia. Coba beberapa saat lagi.',
+        error: true,
+      );
+      return;
+    }
+    var selected = zones.any((z) => z.id == user.zoneId)
+        ? user.zoneId
+        : zones.first.id;
+    var saving = false;
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setState) => AlertDialog(
+          title: const Text('Ganti Zona Driver'),
+          content: DropdownButtonFormField<String>(
+            initialValue: selected,
+            decoration: const InputDecoration(
+              labelText: 'Pilih Zona Aktif',
+              prefixIcon: Icon(Symbols.location_on_rounded),
+            ),
+            items: zones
+                .map(
+                  (z) => DropdownMenuItem(value: z.id, child: Text(z.name)),
+                )
+                .toList(),
+            onChanged: saving
+                ? null
+                : (v) {
+                    if (v != null) setState(() => selected = v);
+                  },
+          ),
+          actions: [
+            TextButton(
+              onPressed: saving ? null : () => Navigator.pop(dialogContext),
+              child: const Text('Batal'),
+            ),
+            FilledButton(
+              onPressed: saving
+                  ? null
+                  : () async {
+                      setState(() => saving = true);
+                      try {
+                        await FirestoreService().updateDriverZone(selected);
+                        if (dialogContext.mounted) {
+                          Navigator.pop(dialogContext);
+                          showMessage(
+                            dialogContext,
+                            'Zona driver berhasil diperbarui.',
+                          );
+                        }
+                      } catch (e) {
+                        setState(() => saving = false);
+                        if (dialogContext.mounted) {
+                          showMessage(dialogContext, '$e', error: true);
+                        }
+                      }
+                    },
+              child: saving
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Simpan Zona'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1893,9 +2053,9 @@ class _DriverOrderDetailScreenState extends State<DriverOrderDetailScreen> {
             }
           });
         }
-        final nextStatus = _nextStatus(order.status);
+        final nextStatus = _nextStatus(order.status, order.serviceType);
         return ListView(
-          padding: const EdgeInsets.only(bottom: 32),
+          padding: EdgeInsets.only(bottom: 32 + bottomSystemInset(context)),
           children: [
             if (order.pickup.latitude != 0)
               SizedBox(
@@ -1934,7 +2094,8 @@ class _DriverOrderDetailScreenState extends State<DriverOrderDetailScreen> {
                               width: 42,
                               height: 42,
                               child: const Icon(
-                                Icons.two_wheeler,
+                                Symbols.moped_rounded,
+                                fill: 1,
                                 size: 34,
                                 color: Color(0xFF2563EB),
                               ),
@@ -1986,9 +2147,49 @@ class _DriverOrderDetailScreenState extends State<DriverOrderDetailScreen> {
                           ),
                         ),
                       ),
-                      StatusPill(order.status),
+                      StatusPill(order.status, serviceType: order.serviceType),
                     ],
                   ),
+                  if (order.serviceType == 'food') ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 10,
+                      ),
+                      decoration: BoxDecoration(
+                        color: order.meta['merchant_stage'] == 'handed_over'
+                            ? _kGreenLight
+                            : const Color(0xFFFFF7ED),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            order.meta['merchant_stage'] == 'handed_over'
+                                ? Icons.inventory_2_rounded
+                                : Icons.soup_kitchen_outlined,
+                            size: 20,
+                            color: order.meta['merchant_stage'] == 'handed_over'
+                                ? _kGreen
+                                : const Color(0xFFE67E00),
+                          ),
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Text(
+                              order.meta['merchant_stage'] == 'handed_over'
+                                  ? 'UMKM sudah menyerahkan pesanan ke driver'
+                                  : 'UMKM sedang menyiapkan / menunggu serah terima pesanan',
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 16),
                   _InfoCard(
                     children: [
@@ -1999,14 +2200,19 @@ class _DriverOrderDetailScreenState extends State<DriverOrderDetailScreen> {
                       const SizedBox(height: 10),
                       Row(
                         children: [
-                          CircleAvatar(
-                            radius: 24,
-                            backgroundImage: order.customerPhotoUrl.isNotEmpty
-                                ? NetworkImage(order.customerPhotoUrl)
-                                : null,
-                            child: order.customerPhotoUrl.isEmpty
-                                ? const Icon(Icons.person)
-                                : null,
+                          Builder(
+                            builder: (context) {
+                              final customerImage = appImageProvider(
+                                order.customerPhotoUrl,
+                              );
+                              return CircleAvatar(
+                                radius: 24,
+                                backgroundImage: customerImage,
+                                child: customerImage == null
+                                    ? const Icon(Icons.person)
+                                    : null,
+                              );
+                            },
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -2197,14 +2403,25 @@ class _DriverOrderDetailScreenState extends State<DriverOrderDetailScreen> {
     ),
   );
 
-  (String, String)? _nextStatus(String current) => switch (current) {
-    'driver_confirmed' => ('heading_to_pickup', 'Mulai Menuju Lokasi Jemput'),
-    'heading_to_pickup' => (
-      'at_pickup',
-      '📍 Sudah Sampai di Titik Penjemputan',
-    ),
-    'at_pickup' => ('on_delivery', 'Mulai Menuju Tempat Tujuan'),
-    'on_delivery' => ('completed', 'Sudah Sampai Tujuan'),
-    _ => null,
-  };
+  (String, String)? _nextStatus(String current, String serviceType) {
+    if (serviceType == 'food') {
+      return switch (current) {
+        'driver_confirmed' => ('heading_to_pickup', 'Menuju ke UMKM'),
+        'heading_to_pickup' => ('at_pickup', 'Sudah sampai di UMKM'),
+        'at_pickup' => ('on_delivery', 'Menuju lokasi pelanggan'),
+        'on_delivery' => ('completed', 'Selesai'),
+        _ => null,
+      };
+    }
+    return switch (current) {
+      'driver_confirmed' => ('heading_to_pickup', 'Mulai Menuju Lokasi Jemput'),
+      'heading_to_pickup' => (
+        'at_pickup',
+        '📍 Sudah Sampai di Titik Penjemputan',
+      ),
+      'at_pickup' => ('on_delivery', 'Mulai Menuju Tempat Tujuan'),
+      'on_delivery' => ('completed', 'Sudah Sampai Tujuan'),
+      _ => null,
+    };
+  }
 }

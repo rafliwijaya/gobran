@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/app_theme.dart';
 import '../../models/app_models.dart';
-import '../../services/auth_service.dart';
 import '../content/content_screens.dart';
 import 'customer_home_screen.dart';
+import 'customer_profile_screen.dart';
 
 class CustomerShell extends StatefulWidget {
   const CustomerShell({required this.user, super.key});
@@ -19,143 +21,17 @@ class _CustomerShellState extends State<CustomerShell> {
   Widget build(BuildContext context) {
     final screens = [
       CustomerHomeScreen(user: widget.user),
-      const OrdersScreen(),
       const PromotionScreen(),
+      const QrisMaintenanceScreen(),
       const HistoryScreen(),
-      const InboxScreen(),
+      CustomerProfileScreen(user: widget.user),
     ];
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: AppColors.background,
       body: IndexedStack(index: _index, children: screens),
       bottomNavigationBar: _GoBranNavBar(
         currentIndex: _index,
         onTap: (i) => setState(() => _index = i),
-        user: widget.user,
-      ),
-    );
-  }
-
-  void _showAccount(BuildContext context) {
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(22, 0, 22, 26),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 52,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey.shade200),
-                      image: widget.user.photoUrl.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(widget.user.photoUrl),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
-                      color: widget.user.photoUrl.isEmpty
-                          ? const Color(0xFFE8F5E9)
-                          : null,
-                    ),
-                    child: widget.user.photoUrl.isEmpty
-                        ? Center(
-                            child: Text(
-                              widget.user.name.isNotEmpty
-                                  ? widget.user.name[0].toUpperCase()
-                                  : 'G',
-                              style: const TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.w700,
-                                color: Color(0xFF00880F),
-                              ),
-                            ),
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.user.name,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          widget.user.email,
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Zona: ${widget.user.zoneId}',
-                style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
-              ),
-              const SizedBox(height: 20),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (dialogContext) => AlertDialog(
-                      title: const Text('Keluar dari akun?'),
-                      content: const Text(
-                        'Anda perlu masuk kembali untuk menggunakan akun ini.',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext, false),
-                          child: const Text('Batal'),
-                        ),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFFD92D20),
-                          ),
-                          onPressed: () => Navigator.pop(dialogContext, true),
-                          child: const Text('Keluar'),
-                        ),
-                      ],
-                    ),
-                  );
-                  if (confirmed == true && context.mounted) {
-                    Navigator.pop(context);
-                    await AuthService().signOut();
-                  }
-                },
-                icon: const Icon(Icons.logout, size: 18),
-                label: const Text('Keluar dari akun'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFD92D20),
-                  side: const BorderSide(color: Color(0xFFD92D20)),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -163,23 +39,22 @@ class _CustomerShellState extends State<CustomerShell> {
 
 // ─── Custom Bottom Navigation Bar ──────────────────────────────
 class _GoBranNavBar extends StatelessWidget {
-  const _GoBranNavBar({
-    required this.currentIndex,
-    required this.onTap,
-    required this.user,
-  });
+  const _GoBranNavBar({required this.currentIndex, required this.onTap});
   final int currentIndex;
   final ValueChanged<int> onTap;
-  final AppUser user;
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      _NavItem(assetPath: 'web/icons/beranda.png', label: 'Beranda'),
-      _NavItem(assetPath: 'web/icons/berita.png', label: 'Pesanan'),
+    final items = const [
+      _NavItem(icon: Symbols.home_rounded, label: 'Beranda'),
       _NavItem(assetPath: 'web/icons/promosi.png', label: 'Promo'),
-      _NavItem(assetPath: 'web/icons/history.png', label: 'Riwayat'),
-      _NavItem(assetPath: 'web/icons/user.png', label: 'Akun'),
+      _NavItem(
+        icon: Symbols.qr_code_scanner_rounded,
+        label: 'QRIS',
+        isCenterQris: true,
+      ),
+      _NavItem(icon: Symbols.overview_rounded, label: 'Aktifitas'),
+      _NavItem(icon: Symbols.person_rounded, label: 'Akun'),
     ];
 
     return Container(
@@ -202,47 +77,112 @@ class _GoBranNavBar extends StatelessWidget {
             children: List.generate(items.length, (i) {
               final item = items[i];
               final isActive = currentIndex == i;
+              final activeColor = AppColors.primaryDark;
+
+              if (item.isCenterQris) {
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: () => onTap(i),
+                    behavior: HitTestBehavior.opaque,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(
+                          height: 33,
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            alignment: Alignment.bottomCenter,
+                            children: [
+                              Positioned(
+                                top: -24,
+                                child: Container(
+                                  width: 58,
+                                  height: 58,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 4,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withValues(
+                                          alpha: 0.12,
+                                        ),
+                                        blurRadius: 10,
+                                        offset: const Offset(0, 3),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    Symbols.qr_code_scanner_rounded,
+                                    fill: 1,
+                                    size: 28,
+                                    color: isActive
+                                        ? Colors.white
+                                        : AppColors.ink,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: isActive
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: isActive ? activeColor : Colors.grey.shade600,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+
               return Expanded(
                 child: GestureDetector(
-                  onTap: () {
-                    if (i == 4) {
-                      // Show account modal for last tab
-                      final shell = context
-                          .findAncestorStateOfType<_CustomerShellState>();
-                      shell?._showAccount(context);
-                    } else {
-                      onTap(i);
-                    }
-                  },
+                  onTap: () => onTap(i),
                   behavior: HitTestBehavior.opaque,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Green line indicator on top
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 250),
                         height: 3,
                         width: isActive ? 24 : 0,
                         margin: const EdgeInsets.only(bottom: 6),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF00880F),
+                          color: AppColors.primary,
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
-                      // Icon with color filter
-                      ColorFiltered(
-                        colorFilter: ColorFilter.mode(
-                          isActive
-                              ? const Color(0xFF00880F)
-                              : Colors.grey.shade400,
-                          BlendMode.srcIn,
+                      if (item.assetPath != null)
+                        ColorFiltered(
+                          colorFilter: ColorFilter.mode(
+                            isActive ? activeColor : Colors.grey.shade400,
+                            BlendMode.srcIn,
+                          ),
+                          child: Image.asset(
+                            item.assetPath!,
+                            width: 24,
+                            height: 24,
+                          ),
+                        )
+                      else
+                        Icon(
+                          item.icon!,
+                          fill: 1,
+                          size: 24,
+                          color: isActive ? activeColor : Colors.grey.shade400,
                         ),
-                        child: Image.asset(
-                          item.assetPath,
-                          width: 24,
-                          height: 24,
-                        ),
-                      ),
                       const SizedBox(height: 4),
                       Text(
                         item.label,
@@ -251,9 +191,7 @@ class _GoBranNavBar extends StatelessWidget {
                           fontWeight: isActive
                               ? FontWeight.w600
                               : FontWeight.w500,
-                          color: isActive
-                              ? const Color(0xFF00880F)
-                              : Colors.grey.shade500,
+                          color: isActive ? activeColor : Colors.grey.shade500,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -271,7 +209,14 @@ class _GoBranNavBar extends StatelessWidget {
 }
 
 class _NavItem {
-  const _NavItem({required this.assetPath, required this.label});
-  final String assetPath;
+  const _NavItem({
+    this.icon,
+    this.assetPath,
+    required this.label,
+    this.isCenterQris = false,
+  });
+  final IconData? icon;
+  final String? assetPath;
   final String label;
+  final bool isCenterQris;
 }

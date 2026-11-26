@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 abstract final class AppColors {
-  static const primary = Color(0xFF00880F);
-  static const primaryDark = Color(0xFF006B0C);
-  static const primaryLight = Color(0xFFE8F5E9);
+  static const primary = Color(0xFFA3E635);
+  static const primaryDark = Color(0xFF70AB13);
+  static const primaryLight = Color(0xFFF0FAF1);
   static const accent = Color(0xFFFFB703);
-  static const background = Color(0xFFF5F5F5);
+  static const background = Color(0xFFFFFFFF);
   static const danger = Color(0xFFD92D20);
   static const ink = Color(0xFF1A1A1A);
   static const grey = Color(0xFF9E9E9E);
@@ -65,10 +65,17 @@ ThemeData buildAppTheme() {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.ink,
         minimumSize: const Size.fromHeight(52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600, fontSize: 15),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.primary,
+        foregroundColor: AppColors.ink,
+        textStyle: GoogleFonts.poppins(fontWeight: FontWeight.w600),
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(

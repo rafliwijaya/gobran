@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../../core/common_widgets.dart';
 import '../../models/app_models.dart';
@@ -65,11 +66,14 @@ class _VerificationTab extends StatelessWidget {
           return Card(
             child: ExpansionTile(
               leading: CircleAvatar(
-                child: Icon(switch (user.role) {
-                  AppRole.driver => Icons.two_wheeler,
-                  AppRole.umkm => Icons.storefront,
-                  _ => Icons.home_repair_service,
-                }),
+                child: Icon(
+                  switch (user.role) {
+                    AppRole.driver => Symbols.moped_rounded,
+                    AppRole.umkm => Symbols.storefront_rounded,
+                    _ => Symbols.home_repair_service_rounded,
+                  },
+                  fill: 1,
+                ),
               ),
               title: Text(
                 user.name,
@@ -207,7 +211,7 @@ class _ContentAdminTab extends StatelessWidget {
       ),
       Positioned(
         right: 18,
-        bottom: 18,
+        bottom: 18 + bottomSystemInset(context),
         child: FloatingActionButton.extended(
           heroTag: 'admin_content',
           onPressed: () => _editContent(context),
@@ -292,8 +296,8 @@ Future<void> _editContent(
                 onPressed: () async {
                   final selected = await ImagePicker().pickImage(
                     source: ImageSource.gallery,
-                    imageQuality: 80,
-                    maxWidth: 1800,
+                    imageQuality: 58,
+                    maxWidth: 720,
                   );
                   if (selected != null) setState(() => image = selected);
                 },
@@ -571,7 +575,7 @@ class _SimpleCollectionAdmin extends StatelessWidget {
       ),
       Positioned(
         right: 18,
-        bottom: 18,
+        bottom: 18 + bottomSystemInset(context),
         child: FloatingActionButton.extended(
           heroTag: collection,
           onPressed: () => onEdit(context),
@@ -650,8 +654,8 @@ class _PricingAdminTabState extends State<_PricingAdminTab> {
             onPressed: () async {
               final image = await ImagePicker().pickImage(
                 source: ImageSource.gallery,
-                imageQuality: 90,
-                maxWidth: 1600,
+                imageQuality: 62,
+                maxWidth: 800,
               );
               if (image == null) return;
               final url = await FirestoreService().uploadImage(image, 'config');

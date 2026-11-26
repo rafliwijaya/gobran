@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/app_theme.dart';
 import '../../core/common_widgets.dart';
 import '../../core/formatters.dart';
 import '../../models/app_models.dart';
@@ -34,6 +36,10 @@ class OrdersScreen extends StatelessWidget {
 
   static const _activeStatuses = [
     'searching',
+    'waiting_partner',
+    'waiting_merchant',
+    'preparing',
+    'ready',
     'pending_confirmation',
     'accepted',
     'driver_confirmed',
@@ -63,112 +69,173 @@ class OrdersScreen extends StatelessWidget {
             );
           }
           return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 96),
+            padding: EdgeInsets.fromLTRB(
+              18,
+              18,
+              18,
+              96 + bottomSystemInset(context),
+            ),
             itemCount: activeOrders.length,
             separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              final order = activeOrders[index];
-              return Card(
-                elevation: 0,
-                color: const Color(0xFFEAF7F1),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: const Color(0xFF00880F).withValues(alpha: .18),
-                  ),
-                ),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(16),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => OrderDetailScreen(orderId: order.id),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            CircleAvatar(
-                              radius: 24,
-                              backgroundColor: const Color(
-                                0xFF00880F,
-                              ).withValues(alpha: .12),
-                              child: Icon(
-                                _serviceIcon(order.serviceType),
-                                color: const Color(0xFF00880F),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _serviceLabel(order.serviceType),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 15,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    shortDate(order.createdAt),
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.route_outlined,
-                              color: Color(0xFF00880F),
-                              size: 19,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'Order sedang diproses',
-                                style: TextStyle(
-                                  color: Colors.grey.shade700,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                            Text(
-                              rupiah(order.fare),
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Align(
-                          alignment: Alignment.center,
-                          child: StatusPill(order.status),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            },
+            itemBuilder: (context, index) =>
+                _ActiveOrderCard(order: activeOrders[index]),
           );
         },
       ),
     ),
   );
+}
+
+class _ActiveOrderCard extends StatelessWidget {
+  const _ActiveOrderCard({required this.order});
+
+  final AppOrder order;
+
+  @override
+  Widget build(BuildContext context) {
+    final foodSummary = order.serviceType == 'food'
+        ? '${order.meta['merchant_name'] ?? 'UMKM'} • ${order.items.length} menu'
+        : null;
+    return Card(
+      elevation: 0,
+      color: AppColors.primaryLight,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+        side: BorderSide(color: AppColors.primary.withValues(alpha: .45)),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(16),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(orderId: order.id),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: AppColors.primary.withValues(alpha: .25),
+                    child: Icon(
+                      _serviceIcon(order.serviceType),
+                      fill: 1,
+                      color: AppColors.primaryDark,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _serviceLabel(order.serviceType),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          shortDate(order.createdAt),
+                          style: TextStyle(
+                            color: Colors.grey.shade600,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(
+                    Symbols.route_rounded,
+                    fill: 1,
+                    color: AppColors.primaryDark,
+                    size: 19,
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      foodSummary ??
+                          ((order.meta['listing_name']
+                                      ?.toString()
+                                      .trim()
+                                      .isNotEmpty ??
+                                  false)
+                              ? order.meta['listing_name'].toString()
+                              : 'Order sedang diproses'),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        color: Colors.grey.shade700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  Text(
+                    rupiah(order.fare),
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: AppColors.primary.withValues(alpha: .45),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Symbols.moped_rounded,
+                      fill: 1,
+                      size: 18,
+                      color: AppColors.primaryDark,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        order.customerProgressLabel,
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1F2937),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 10),
+              Align(
+                alignment: Alignment.center,
+                child: StatusPill(
+                  order.status,
+                  serviceType: order.serviceType,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class PromotionScreen extends StatefulWidget {
@@ -348,89 +415,188 @@ class HistoryScreen extends StatelessWidget {
       builder: (context, snapshot) => AsyncView<List<AppOrder>>(
         snapshot: snapshot,
         isEmpty: (items) => items.isEmpty,
-        emptyMessage: 'Belum ada riwayat pemesanan.',
+        emptyMessage: 'Belum ada aktifitas pemesanan.',
         builder: (items) {
+          final activeOrders =
+              items
+                  .where((order) => OrdersScreen._activeStatuses.contains(order.status))
+                  .toList()
+                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
           final history =
               items
                   .where((order) => _historyStatuses.contains(order.status))
                   .toList()
                 ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
-          if (history.isEmpty) {
+          if (activeOrders.isEmpty && history.isEmpty) {
             return const Center(
-              child: Text('Belum ada pesanan selesai atau ditolak.'),
+              child: Text('Belum ada aktifitas pemesanan.'),
             );
           }
-          return ListView.separated(
-            padding: const EdgeInsets.fromLTRB(18, 18, 18, 96),
-            itemCount: history.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 10),
-            itemBuilder: (context, index) {
-              final order = history[index];
-              return Card(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => OrderDetailScreen(orderId: order.id),
-                    ),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(14),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CircleAvatar(
-                          child: Icon(_serviceIcon(order.serviceType)),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _serviceLabel(order.serviceType),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              const SizedBox(height: 5),
-                              Text(
-                                shortDate(order.createdAt),
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                rupiah(order.fare),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        SizedBox(
-                          width: 118,
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: StatusPill(order.status),
-                          ),
-                        ),
-                      ],
-                    ),
+          return ListView(
+            padding: EdgeInsets.fromLTRB(
+              18,
+              18,
+              18,
+              96 + bottomSystemInset(context),
+            ),
+            children: [
+              if (activeOrders.isNotEmpty) ...[
+                const Text(
+                  'Pesanan Sedang Berlangsung',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ink,
                   ),
                 ),
-              );
-            },
+                const SizedBox(height: 10),
+                for (var i = 0; i < activeOrders.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 10),
+                  _ActiveOrderCard(order: activeOrders[i]),
+                ],
+                if (history.isNotEmpty) const SizedBox(height: 22),
+              ],
+              if (history.isNotEmpty) ...[
+                if (activeOrders.isNotEmpty) ...[
+                  const Text(
+                    'Riwayat Selesai',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                for (var i = 0; i < history.length; i++) ...[
+                  if (i > 0) const SizedBox(height: 10),
+                  _HistoryOrderCard(order: history[i]),
+                ],
+              ],
+            ],
           );
         },
       ),
     ),
   );
+}
+
+class _HistoryOrderCard extends StatelessWidget {
+  const _HistoryOrderCard({required this.order});
+
+  final AppOrder order;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => OrderDetailScreen(orderId: order.id),
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(14),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                backgroundColor: AppColors.primaryLight,
+                foregroundColor: AppColors.primaryDark,
+                child: Icon(
+                  _serviceIcon(order.serviceType),
+                  fill: 1,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _serviceLabel(order.serviceType),
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      shortDate(order.createdAt),
+                      style: TextStyle(
+                        color: Colors.grey.shade600,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      rupiah(order.fare),
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 10),
+              SizedBox(
+                width: 118,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: StatusPill(
+                    order.status,
+                    serviceType: order.serviceType,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class QrisMaintenanceScreen extends StatelessWidget {
+  const QrisMaintenanceScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Image.asset(
+                'web/icons/pemeliharaan.png',
+                width: 230,
+                height: 230,
+                fit: BoxFit.contain,
+              ),
+              const SizedBox(height: 18),
+              const Text(
+                'Maaf ya, halaman lagi  gak ada..',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.black,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Tim pengembang sedang memberikan pelayanan yang terbaik buat kamu.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13.5,
+                  color: Colors.grey.shade600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class InboxScreen extends StatelessWidget {
@@ -456,13 +622,13 @@ class InboxScreen extends StatelessWidget {
             final item = items[index];
             return Card(
               elevation: 0,
-              color: item.isRead ? Colors.white : const Color(0xFFEAF7F1),
+              color: item.isRead ? Colors.white : AppColors.primaryLight,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(14),
                 side: BorderSide(
                   color: item.isRead
                       ? Colors.grey.shade200
-                      : const Color(0xFF00880F).withValues(alpha: 0.25),
+                      : AppColors.primary.withValues(alpha: 0.45),
                 ),
               ),
               child: ListTile(
@@ -476,16 +642,17 @@ class InboxScreen extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: item.isRead
                         ? Colors.grey.shade100
-                        : const Color(0xFF00880F).withValues(alpha: 0.12),
+                        : AppColors.primary.withValues(alpha: 0.25),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
                     item.isRead
-                        ? Icons.notifications_none
-                        : Icons.notifications_active,
+                        ? Symbols.notifications_rounded
+                        : Symbols.notifications_active_rounded,
+                    fill: item.isRead ? 0 : 1,
                     color: item.isRead
-                        ? Colors.grey.shade400
-                        : const Color(0xFF00880F),
+                        ? Colors.grey.shade500
+                        : AppColors.primaryDark,
                     size: 22,
                   ),
                 ),
@@ -526,13 +693,13 @@ class InboxScreen extends StatelessWidget {
     // Jika dibuka standalone via Navigator.push, bungkus dengan Scaffold lengkap
     if (standalone) {
       return Scaffold(
-        backgroundColor: const Color(0xFFF5F5F5),
+        backgroundColor: AppColors.background,
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
           leading: IconButton(
             icon: const Icon(
-              Icons.arrow_back_ios_new_rounded,
+              Symbols.arrow_back_ios_new_rounded,
               color: Color(0xFF1A1A1A),
               size: 20,
             ),
@@ -570,9 +737,9 @@ String _serviceLabel(String type) => switch (type) {
 };
 
 IconData _serviceIcon(String type) => switch (type) {
-  'ojek' => Icons.two_wheeler,
-  'express' => Icons.local_shipping_outlined,
-  'food' => Icons.restaurant,
-  'service' => Icons.home_repair_service_outlined,
-  _ => Icons.receipt_long,
+  'ojek' => Symbols.moped_rounded,
+  'express' => Symbols.local_shipping_rounded,
+  'food' => Symbols.restaurant_rounded,
+  'service' => Symbols.home_repair_service_rounded,
+  _ => Symbols.receipt_long_rounded,
 };

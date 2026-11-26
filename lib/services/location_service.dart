@@ -170,4 +170,127 @@ class LocationService {
     }
     return currentUrl;
   }
+
+  /// Extracts pickup and/or destination coordinates from a Google Maps URL.
+  Future<({LatLng? pickup, LatLng? destination})> parseGoogleMapsLink(
+    String rawUrl,
+  ) async {
+    var resolvedUrl = rawUrl.trim();
+    final parsed = Uri.tryParse(resolvedUrl);
+    if (parsed == null || parsed.scheme.toLowerCase() != 'https') {
+      throw Exception('Link Google Maps harus menggunakan HTTPS.');
+    }
+    if (resolvedUrl.contains('maps.app.goo.gl') ||
+        resolvedUrl.contains('goo.gl/maps')) {
+      resolvedUrl = await resolveRedirect(resolvedUrl);
+    }
+
+    LatLng? pickupPoint;
+    LatLng? destinationPoint;
+
+    final startDirMatch = RegExp(
+      r'/dir/(-?\d+\.\d+),(-?\d+\.\d+)',
+    ).firstMatch(resolvedUrl);
+    if (startDirMatch != null) {
+      pickupPoint = LatLng(
+        double.parse(startDirMatch.group(1)!),
+        double.parse(startDirMatch.group(2)!),
+      );
+    }
+
+    final destDirMatch = RegExp(
+      r'/dir/[^/]+/(-?\d+\.\d+),(-?\d+\.\d+)',
+    ).firstMatch(resolvedUrl);
+    if (destDirMatch != null) {
+      destinationPoint = LatLng(
+        double.parse(destDirMatch.group(1)!),
+        double.parse(destDirMatch.group(2)!),
+      );
+    }
+
+    if (destinationPoint == null) {
+      final latMatch = RegExp(r'!3d(-?\d+\.\d+)').firstMatch(resolvedUrl);
+      final lonMatch = RegExp(r'!4d(-?\d+\.\d+)').firstMatch(resolvedUrl);
+      if (latMatch != null && lonMatch != null) {
+        destinationPoint = LatLng(
+          double.parse(latMatch.group(1)!),
+          double.parse(lonMatch.group(1)!),
+        );
+      }
+    }
+
+    if (pickupPoint == null) {
+      final sMatch = RegExp(
+        r'[?&]saddr=(-?\d+\.\d+),(-?\d+\.\d+)',
+      ).firstMatch(resolvedUrl);
+      if (sMatch != null) {
+        pickupPoint = LatLng(
+          double.parse(sMatch.group(1)!),
+          double.parse(sMatch.group(2)!),
+        );
+      }
+    }
+
+    if (destinationPoint == null) {
+      final dMatch = RegExp(
+        r'[?&]daddr=(-?\d+\.\d+),(-?\d+\.\d+)',
+      ).firstMatch(resolvedUrl);
+      if (dMatch != null) {
+        destinationPoint = LatLng(
+          double.parse(dMatch.group(1)!),
+          double.parse(dMatch.group(2)!),
+        );
+      }
+    }
+
+    if (destinationPoint == null) {
+      final placeMatch = RegExp(
+        r'/place/(-?\d+\.\d+),(-?\d+\.\d+)',
+      ).firstMatch(resolvedUrl);
+      if (placeMatch != null) {
+        destinationPoint = LatLng(
+          double.parse(placeMatch.group(1)!),
+          double.parse(placeMatch.group(2)!),
+        );
+      }
+    }
+
+    if (destinationPoint == null) {
+      final qMatch = RegExp(
+        r'[?&](query|q)=(-?\d+\.\d+),(-?\d+\.\d+)',
+      ).firstMatch(resolvedUrl);
+      if (qMatch != null) {
+        destinationPoint = LatLng(
+          double.parse(qMatch.group(2)!),
+          double.parse(qMatch.group(3)!),
+        );
+      }
+    }
+
+    if (destinationPoint == null) {
+      final atMatch = RegExp(
+        r'@(-?\d+\.\d+),(-?\d+\.\d+)',
+      ).firstMatch(resolvedUrl);
+      if (atMatch != null) {
+        destinationPoint = LatLng(
+          double.parse(atMatch.group(1)!),
+          double.parse(atMatch.group(2)!),
+        );
+      }
+    }
+
+    if (pickupPoint == null &&
+        (resolvedUrl.contains('/dir/My+Location') ||
+            resolvedUrl.contains('/dir/Lokasi+Saya'))) {
+      try {
+        pickupPoint = await currentLocation();
+      } catch (_) {}
+    }
+
+    if (pickupPoint == null && destinationPoint == null) {
+      throw Exception('Link tidak valid atau koordinat tidak ditemukan.');
+    }
+
+    return (pickup: pickupPoint, destination: destinationPoint);
+  }
 }

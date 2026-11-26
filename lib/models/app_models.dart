@@ -171,6 +171,55 @@ class AppOrder {
   /// Driver IDs yang sudah ditolak pelanggan untuk order ini
   final List<String> rejectedDriverIds;
 
+  /// Label progres langsung untuk kartu & detail pesanan pelanggan.
+  String get customerProgressLabel {
+    final drv = driverName.trim().isNotEmpty ? ' ($driverName)' : '';
+    if (serviceType == 'food') {
+      final handedOver = meta['merchant_stage'] == 'handed_over';
+      return switch (status) {
+        'waiting_merchant' => 'Menunggu UMKM menerima pesanan',
+        'searching' =>
+          'Pesanan diterima UMKM • Mencari driver terdekat...',
+        'driver_confirmed' => 'Driver$drv menerima pesanan • Siap ke UMKM',
+        'heading_to_pickup' => 'Driver$drv sedang menuju ke UMKM',
+        'at_pickup' => handedOver
+            ? 'Driver$drv sudah di UMKM • Pesanan diserahkan'
+            : 'Driver$drv sudah sampai di UMKM',
+        'on_delivery' => 'Driver$drv sedang menuju lokasi pelanggan',
+        'completed' => 'Pesanan makanan telah selesai diantar',
+        'cancelled' => 'Pesanan dibatalkan',
+        _ => status,
+      };
+    }
+    return switch (status) {
+      'searching' => 'Mencari driver terdekat...',
+      'waiting_partner' => 'Menunggu mitra jasa menerima permintaan',
+      'accepted' => 'Mitra jasa menerima permintaan Anda',
+      'pending_confirmation' =>
+        'Driver$drv ditemukan • Menunggu konfirmasi Anda',
+      'driver_confirmed' => 'Driver$drv siap menuju titik jemput',
+      'heading_to_pickup' => 'Driver$drv sedang menuju titik jemput',
+      'at_pickup' => 'Driver$drv sudah sampai di titik jemput',
+      'on_delivery' => 'Driver$drv sedang menuju lokasi tujuan',
+      'completed' => 'Order selesai',
+      'cancelled' => 'Order dibatalkan',
+      _ => status,
+    };
+  }
+
+  /// Pelanggan hanya bisa membatalkan pesanan food sebelum diterima UMKM.
+  bool get customerCanCancel {
+    if (serviceType == 'food') {
+      return status == 'waiting_merchant';
+    }
+    return const [
+      'searching',
+      'waiting_partner',
+      'pending_confirmation',
+      'heading_to_pickup',
+    ].contains(status);
+  }
+
   factory AppOrder.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
     return AppOrder(
@@ -212,6 +261,7 @@ class Product {
     required this.stock,
     required this.imageUrl,
     required this.isActive,
+    this.discountPercent = 0,
   });
 
   final String id;
@@ -224,9 +274,16 @@ class Product {
   final int stock;
   final String imageUrl;
   final bool isActive;
+  final int discountPercent;
+
+  bool get hasDiscount => discountPercent > 0 && discountPercent <= 100;
+
+  int get discountedPrice =>
+      hasDiscount ? (price * (100 - discountPercent) / 100).round() : price;
 
   factory Product.fromDoc(DocumentSnapshot<Map<String, dynamic>> doc) {
     final data = doc.data() ?? {};
+    final rawDiscount = (data['discount_percent'] as num?)?.toInt() ?? 0;
     return Product(
       id: doc.id,
       merchantId: data['merchant_id'] ?? '',
@@ -238,6 +295,7 @@ class Product {
       stock: (data['stock'] as num?)?.toInt() ?? 0,
       imageUrl: data['image_url'] ?? '',
       isActive: data['is_active'] ?? true,
+      discountPercent: rawDiscount.clamp(0, 100),
     );
   }
 }

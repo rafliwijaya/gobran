@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/app_theme.dart';
 import '../../core/common_widgets.dart';
 import '../../core/formatters.dart';
 import '../../models/app_models.dart';
@@ -8,8 +10,8 @@ import '../../services/firestore_service.dart';
 import '../../services/location_service.dart';
 
 // ─── Warna ───────────────────────────────────────────────────────
-const _kGreen = Color(0xFF00880F);
-const _kGreenLight = Color(0xFFF0FDF4);
+const _kGreen = AppColors.primaryDark;
+const _kGreenLight = AppColors.primaryLight;
 const _kRed = Color(0xFFD92D20);
 const _kRedLight = Color(0xFFFFF1F2);
 const _kOrange = Color(0xFFE67E00);
@@ -20,11 +22,11 @@ class OrderDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: const Color(0xFFF5F5F5),
+    backgroundColor: AppColors.background,
     appBar: AppBar(
       title: const Text('Detail Pesanan'),
-      backgroundColor: _kGreen,
-      foregroundColor: Colors.white,
+      backgroundColor: AppColors.primary,
+      foregroundColor: AppColors.ink,
       elevation: 0,
     ),
     body: StreamBuilder<AppOrder?>(
@@ -56,11 +58,13 @@ class _OrderDetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ListView(
-      padding: const EdgeInsets.only(bottom: 32),
+      padding: EdgeInsets.only(bottom: 32 + bottomSystemInset(context)),
       children: [
         // ── Status Banner ─────────────────────────────────────────
         _StatusBanner(
           status: order.status,
+          serviceType: order.serviceType,
+          handedOver: order.meta['merchant_stage'] == 'handed_over',
           rejectionCount: order.rejectedDriverIds.length,
         ),
 
@@ -220,6 +224,18 @@ class _OrderDetailBody extends StatelessWidget {
               // ── Tarif ──────────────────────────────────────────
               _InfoCard(
                 children: [
+                  if (order.serviceType == 'food' &&
+                      order.meta['food_subtotal'] != null) ...[
+                    _row(
+                      'Subtotal Makanan',
+                      rupiah((order.meta['food_subtotal'] as num?) ?? 0),
+                    ),
+                    _row(
+                      'Ongkos Kirim',
+                      rupiah((order.meta['delivery_fare'] as num?) ?? 0),
+                    ),
+                    const Divider(),
+                  ],
                   _row('Total', rupiah(order.fare), bold: true),
                   _row(
                     'Pembayaran',
@@ -298,12 +314,29 @@ class _OrderDetailBody extends StatelessWidget {
               ],
 
               // ── Pembatalan: hanya di status tertentu ───────────
-              if ([
-                'searching',
-                'pending_confirmation',
-                'heading_to_pickup',
-              ].contains(order.status)) ...[
+              if (order.customerCanCancel) ...[
                 _CancelButton(order: order),
+              ] else if (order.serviceType == 'food' &&
+                  !['completed', 'cancelled'].contains(order.status)) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.lock_outline, size: 18, color: Colors.grey),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Pesanan sudah diterima UMKM dan tidak dapat dibatalkan oleh pelanggan.',
+                          style: TextStyle(fontSize: 12.5, color: Colors.grey),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ],
           ),
@@ -339,9 +372,16 @@ class _OrderDetailBody extends StatelessWidget {
 
 // ─── Status Banner ────────────────────────────────────────────────
 class _StatusBanner extends StatelessWidget {
-  const _StatusBanner({required this.status, required this.rejectionCount});
+  const _StatusBanner({
+    required this.status,
+    required this.serviceType,
+    required this.rejectionCount,
+    this.handedOver = false,
+  });
   final String status;
+  final String serviceType;
   final int rejectionCount;
+  final bool handedOver;
 
   @override
   Widget build(BuildContext context) {
@@ -392,47 +432,95 @@ class _StatusBanner extends StatelessWidget {
   }
 
   // (color, label, bgColor, icon)
-  (Color, String, Color, IconData) _config() => switch (status) {
-    'searching' => (_kGreen, 'Mencari Driver...', _kGreenLight, Icons.search),
-    'pending_confirmation' => (
-      _kOrange,
-      'Menunggu Konfirmasi Pelanggan',
-      const Color(0xFFFFF7ED),
-      Icons.pending_outlined,
-    ),
-    'driver_confirmed' => (
-      _kGreen,
-      'Driver Dikonfirmasi',
-      _kGreenLight,
-      Icons.check_circle_outline,
-    ),
-    'heading_to_pickup' => (
-      _kGreen,
-      'Driver Menuju Lokasi Anda',
-      _kGreenLight,
-      Icons.navigation_outlined,
-    ),
-    'at_pickup' => (
-      _kGreen,
-      'Driver Sudah di Lokasi Anda',
-      _kGreenLight,
-      Icons.location_on_outlined,
-    ),
-    'on_delivery' => (
-      const Color(0xFF2563EB),
-      'Perjalanan ke Tujuan',
-      const Color(0xFFEFF6FF),
-      Icons.directions_car_outlined,
-    ),
-    'completed' => (_kGreen, 'Order Selesai', _kGreenLight, Icons.check_circle),
-    'cancelled' => (
-      _kRed,
-      'Order Dibatalkan',
-      _kRedLight,
-      Icons.cancel_outlined,
-    ),
-    _ => (Colors.grey, status, Colors.grey.shade100, Icons.info_outline),
-  };
+  (Color, String, Color, IconData) _config() {
+    final isFood = serviceType == 'food';
+    return switch (status) {
+      'searching' => (
+        _kGreen,
+        isFood
+            ? 'Pesanan Diterima UMKM • Mencari Driver...'
+            : 'Mencari Driver...',
+        _kGreenLight,
+        Icons.search,
+      ),
+      'waiting_partner' => (
+        _kOrange,
+        'Menunggu Konfirmasi Mitra Jasa',
+        const Color(0xFFFFF7ED),
+        Icons.hourglass_top_outlined,
+      ),
+      'waiting_merchant' => (
+        _kOrange,
+        'Menunggu Konfirmasi UMKM',
+        const Color(0xFFFFF7ED),
+        Icons.hourglass_top_outlined,
+      ),
+      'preparing' => (
+        _kOrange,
+        'Pesanan Sedang Disiapkan UMKM',
+        const Color(0xFFFFF7ED),
+        Icons.soup_kitchen_outlined,
+      ),
+      'ready' => (
+        _kGreen,
+        'Pesanan Sudah Siap',
+        _kGreenLight,
+        Icons.inventory_2_outlined,
+      ),
+      'accepted' => (
+        _kGreen,
+        'Pesanan Diterima Mitra',
+        _kGreenLight,
+        Icons.check_circle_outline,
+      ),
+      'pending_confirmation' => (
+        _kOrange,
+        'Menunggu Konfirmasi Pelanggan',
+        const Color(0xFFFFF7ED),
+        Icons.pending_outlined,
+      ),
+      'driver_confirmed' => (
+        _kGreen,
+        isFood ? 'Driver Ditemukan • Bersiap ke UMKM' : 'Driver Dikonfirmasi',
+        _kGreenLight,
+        Icons.check_circle_outline,
+      ),
+      'heading_to_pickup' => (
+        _kGreen,
+        isFood
+            ? 'Driver Sedang Menuju ke UMKM'
+            : 'Driver Menuju Lokasi Anda',
+        _kGreenLight,
+        Icons.navigation_outlined,
+      ),
+      'at_pickup' => (
+        _kGreen,
+        isFood
+            ? (handedOver
+                  ? 'Driver di UMKM • Pesanan Sudah Diserahkan'
+                  : 'Driver Sudah Sampai di UMKM')
+            : 'Driver Sudah di Lokasi Anda',
+        _kGreenLight,
+        Icons.location_on_outlined,
+      ),
+      'on_delivery' => (
+        const Color(0xFF2563EB),
+        isFood
+            ? 'Driver Menuju Lokasi Pelanggan'
+            : 'Perjalanan ke Tujuan',
+        const Color(0xFFEFF6FF),
+        Icons.directions_car_outlined,
+      ),
+      'completed' => (_kGreen, 'Order Selesai', _kGreenLight, Icons.check_circle),
+      'cancelled' => (
+        _kRed,
+        'Order Dibatalkan',
+        _kRedLight,
+        Icons.cancel_outlined,
+      ),
+      _ => (Colors.grey, status, Colors.grey.shade100, Icons.info_outline),
+    };
+  }
 }
 
 // ─── Card konfirmasi driver (status: pending_confirmation) ────────
@@ -594,15 +682,20 @@ class _DriverProfileDetail extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
-      CircleAvatar(
-        radius: 32,
-        backgroundColor: _kGreenLight,
-        backgroundImage: (data['face_url'] ?? '').toString().isNotEmpty
-            ? NetworkImage(data['face_url'])
-            : null,
-        child: (data['face_url'] ?? '').toString().isEmpty
-            ? const Icon(Icons.person, size: 28, color: _kGreen)
-            : null,
+      Builder(
+        builder: (context) {
+          final faceImage = appImageProvider(
+            (data['face_url'] ?? '').toString(),
+          );
+          return CircleAvatar(
+            radius: 32,
+            backgroundColor: _kGreenLight,
+            backgroundImage: faceImage,
+            child: faceImage == null
+                ? const Icon(Icons.person, size: 28, color: _kGreen)
+                : null,
+          );
+        },
       ),
       const SizedBox(width: 14),
       Expanded(
@@ -616,7 +709,7 @@ class _DriverProfileDetail extends StatelessWidget {
             const SizedBox(height: 4),
             if ((data['vehicle_type'] ?? '').toString().isNotEmpty)
               _DetailRow(
-                Icons.two_wheeler,
+                Symbols.moped_rounded,
                 '${data['vehicle_type']} ${data['vehicle_brand'] ?? ''}'.trim(),
               ),
             if ((data['plate_number'] ?? '').toString().isNotEmpty)

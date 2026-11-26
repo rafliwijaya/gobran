@@ -1,5 +1,7 @@
 .dart_tool/
 .packages
+.flutter-plugins
+.flutter-plugins-dependencies
 .pub/
 build/
 android/.gradle/
@@ -12,4 +14,3 @@ firebase-debug.log
 .idea/
 .vscode/
 *.iml
-

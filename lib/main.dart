@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 
 import 'core/app_theme.dart';
 import 'features/auth/auth_gate.dart';
+import 'features/auth/splash_intro_screen.dart';
 import 'firebase_options.dart';
 
 Future<void> main() async {
@@ -29,7 +30,7 @@ class GoBranApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: buildAppTheme(),
       home: firebaseError == null
-          ? const AuthGate()
+          ? const GoBranSplashIntroScreen(nextPage: AuthGate())
           : FirebaseSetupScreen(error: firebaseError!),
     );
   }

@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
+import '../../core/app_theme.dart';
 import '../../core/common_widgets.dart';
 import '../../core/formatters.dart';
 import '../../models/app_models.dart';
@@ -31,13 +33,13 @@ class CustomerHomeScreen extends StatelessWidget {
           padding: EdgeInsets.symmetric(horizontal: 20),
           child: _AnimatedSearchBar(),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 14),
         // Service Menu
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: _ServiceMenu(user: user),
         ),
-        const SizedBox(height: 28),
+        const SizedBox(height: 16),
         // Recommendation Section
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -76,7 +78,7 @@ class _HeaderSection extends StatelessWidget {
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [Color(0xFF00880F), Color(0xFF006B0C)],
+                colors: [AppColors.primary, AppColors.primaryDark],
               ),
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(20)),
             ),
@@ -111,14 +113,15 @@ class _HeaderSection extends StatelessWidget {
                         color: Colors.grey.shade200,
                         width: 1.5,
                       ),
-                      image: user.photoUrl.isNotEmpty
-                          ? DecorationImage(
-                              image: NetworkImage(user.photoUrl),
-                              fit: BoxFit.cover,
-                            )
-                          : null,
+                      image: switch (appImageProvider(user.photoUrl)) {
+                        final provider? => DecorationImage(
+                          image: provider,
+                          fit: BoxFit.cover,
+                        ),
+                        null => null,
+                      },
                       color: user.photoUrl.isEmpty
-                          ? const Color(0xFFE8F5E9)
+                          ? AppColors.primaryLight
                           : null,
                     ),
                     child: user.photoUrl.isEmpty
@@ -130,7 +133,7 @@ class _HeaderSection extends StatelessWidget {
                               style: const TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
-                                color: Color(0xFF00880F),
+                                color: AppColors.primaryDark,
                               ),
                             ),
                           )
@@ -154,8 +157,9 @@ class _HeaderSection extends StatelessWidget {
                         Row(
                           children: [
                             Icon(
-                              Icons.location_on,
-                              size: 12,
+                              Symbols.location_on_rounded,
+                              fill: 1,
+                              size: 13,
                               color: Colors.grey.shade500,
                             ),
                             const SizedBox(width: 4),
@@ -176,29 +180,61 @@ class _HeaderSection extends StatelessWidget {
                   ),
                   const SizedBox(width: 12),
                   // Notification Bell
-                  Container(
-                    width: 38,
-                    height: 38,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      shape: BoxShape.circle,
-                    ),
-                    child: IconButton(
-                      icon: Image.asset(
-                        'web/icons/notification.png',
-                        width: 18,
-                        height: 18,
-                      ),
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const InboxScreen(),
+                  StreamBuilder<List<InboxMessage>>(
+                    stream: FirestoreService().watchInbox(),
+                    builder: (context, snapshot) {
+                      final hasUnread = (snapshot.data ?? const [])
+                          .any((item) => !item.isRead);
+                      return Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: hasUnread
+                                  ? AppColors.primaryLight
+                                  : Colors.grey.shade100,
+                              shape: BoxShape.circle,
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                hasUnread
+                                    ? Symbols.notifications_active_rounded
+                                    : Symbols.notifications_rounded,
+                                fill: hasUnread ? 1 : 0,
+                                size: 21,
+                                color: hasUnread
+                                    ? AppColors.primaryDark
+                                    : AppColors.ink,
+                              ),
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const InboxScreen(),
+                                  ),
+                                );
+                              },
+                              padding: EdgeInsets.zero,
+                            ),
                           ),
-                        );
-                      },
-                      padding: EdgeInsets.zero,
-                    ),
+                          if (hasUnread)
+                            Positioned(
+                              right: 2,
+                              top: 2,
+                              child: Container(
+                                width: 9,
+                                height: 9,
+                                decoration: const BoxDecoration(
+                                  color: AppColors.danger,
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
                   ),
                 ],
               ),
@@ -279,29 +315,33 @@ class _AnimatedSearchBarState extends State<_AnimatedSearchBar> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
       decoration: BoxDecoration(
-        color: const Color(0xFFE8F5E9), // Hijau muda
-        borderRadius: BorderRadius.circular(14),
+        color: AppColors.primaryLight,
+        borderRadius: BorderRadius.circular(999),
         border: Border.all(
-          color: const Color(0xFF00880F).withValues(alpha: 0.3),
+          color: AppColors.primary,
           width: 1.2,
         ),
       ),
       child: Row(
         children: [
-          Icon(Icons.search, color: const Color(0xFF00880F), size: 22),
-          const SizedBox(width: 12),
+          const Icon(
+            Symbols.search_rounded,
+            color: AppColors.primaryDark,
+            size: 20,
+          ),
+          const SizedBox(width: 10),
           Expanded(
             child: RichText(
               text: TextSpan(
-                style: TextStyle(fontSize: 15, color: Colors.grey.shade600),
+                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
                 children: [
                   TextSpan(text: _displayText),
                   const TextSpan(
                     text: '|',
                     style: TextStyle(
-                      color: Color(0xFF00880F),
+                      color: AppColors.primaryDark,
                       fontWeight: FontWeight.w300,
                     ),
                   ),
@@ -330,7 +370,11 @@ class _PromoBannerSliderState extends State<_PromoBannerSlider> {
   int _realIndex = 0;
   Timer? _autoScroll;
 
-  final _banners = const ['web/bener.png', 'web/bener.png', 'web/bener.png'];
+  final _banners = const [
+    'web/bener.jpeg',
+    'web/bener.jpeg',
+    'web/bener.jpeg',
+  ];
 
   @override
   void initState() {
@@ -397,7 +441,7 @@ class _PromoBannerSliderState extends State<_PromoBannerSlider> {
               height: 6,
               decoration: BoxDecoration(
                 color: _realIndex == i
-                    ? const Color(0xFF00880F)
+                    ? AppColors.primary
                     : Colors.grey.shade300,
                 borderRadius: BorderRadius.circular(3),
               ),
@@ -422,6 +466,7 @@ class _ServiceMenu extends StatelessWidget {
         Expanded(
           child: _ServiceIcon(
             imagePath: 'web/icons/Ojek.png',
+            boxColor: const Color(0xFFD9F99D),
             label: 'Ojek',
             onTap: () => Navigator.push(
               context,
@@ -434,8 +479,10 @@ class _ServiceMenu extends StatelessWidget {
         ),
         Expanded(
           child: _ServiceIcon(
-            imagePath: 'web/icons/Express.png',
+            imagePath: 'web/icons/express-icon.png',
+            boxColor: const Color(0xFFFEF08A),
             label: 'Express',
+            isBustPortrait: true,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -447,8 +494,10 @@ class _ServiceMenu extends StatelessWidget {
         ),
         Expanded(
           child: _ServiceIcon(
-            imagePath: 'web/icons/Food.png',
+            imagePath: 'web/icons/food-icon.png',
+            boxColor: const Color(0xFFFECACA),
             label: 'Food',
+            isBustPortrait: true,
             onTap: () => Navigator.push(
               context,
               MaterialPageRoute(
@@ -457,95 +506,80 @@ class _ServiceMenu extends StatelessWidget {
             ),
           ),
         ),
-        // Expanded(
-        //   child: _ServiceIcon(
-        //     icon: Icons.emergency,
-        //     label: 'Darurat',
-        //     iconColor: const Color(0xFFD92D20),
-        //     onTap: () => Navigator.push(
-        //       context,
-        //       MaterialPageRoute(builder: (_) => const EmergencyScreen()),
-        //     ),
-        //   ),
-        // ),
+        Expanded(
+          child: _ServiceIcon(
+            imagePath: 'web/icons/jasa-icon.png',
+            boxColor: const Color(0xFFE9D5FF),
+            label: 'Jasa',
+            isBustPortrait: true,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ServiceMarketplaceScreen(user: user),
+              ),
+            ),
+          ),
+        ),
       ],
     );
   }
 }
 
 class _ServiceIcon extends StatelessWidget {
-  const _ServiceIcon({this.imagePath, required this.label, required this.onTap})
-    : icon = null,
-      iconColor = null;
+  const _ServiceIcon({
+    required this.imagePath,
+    required this.boxColor,
+    required this.label,
+    required this.onTap,
+    this.isBustPortrait = false,
+  });
 
-  final String? imagePath;
-  final IconData? icon;
+  final String imagePath;
+  final Color boxColor;
   final String label;
   final VoidCallback onTap;
-  final Color? iconColor;
+  final bool isBustPortrait;
 
   @override
   Widget build(BuildContext context) {
+    const slotSize = 72.0;
     return GestureDetector(
+      behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Jika ada gambar: tampilkan langsung tanpa kotak putih
-          if (imagePath != null)
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(20),
-                child: Image.asset(
-                  imagePath!,
-                  width: 76,
-                  height: 76,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            )
-          // Jika icon biasa (Darurat): tetap pakai kotak putih
-          else
-            Container(
-              width: 76,
-              height: 76,
-              decoration: BoxDecoration(
-                color: (iconColor ?? const Color(0xFF00880F)).withValues(
-                  alpha: 0.1,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(
-                  color: (iconColor ?? const Color(0xFF00880F)).withValues(
-                    alpha: 0.25,
+          SizedBox(
+            width: slotSize,
+            height: slotSize,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                Positioned(
+                  left: 7,
+                  right: 7,
+                  bottom: 0,
+                  child: Container(
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: boxColor,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
                   ),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
+                Positioned(
+                  left: isBustPortrait ? -56 : -49,
+                  bottom: isBustPortrait ? -15.5 : -8,
+                  width: isBustPortrait ? 184 : 170,
+                  height: isBustPortrait ? 100 : 93,
+                  child: IgnorePointer(
+                    child: Image.asset(imagePath, fit: BoxFit.contain),
                   ),
-                ],
-              ),
-              child: Icon(
-                icon,
-                size: 38,
-                color: iconColor ?? const Color(0xFF00880F),
-              ),
+                ),
+              ],
             ),
-          const SizedBox(height: 8),
+          ),
+          const SizedBox(height: 6),
           Text(
             label,
             style: const TextStyle(
@@ -587,7 +621,7 @@ class _RecommendationSection extends StatelessWidget {
             isEmpty: (items) => items.isEmpty,
             emptyMessage: 'Produk UMKM akan tampil di sini.',
             builder: (items) => SizedBox(
-              height: 220,
+              height: 234,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 itemCount: items.length,
@@ -637,10 +671,22 @@ class _ProductCard extends StatelessWidget {
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(16),
               ),
-              child: NetworkImageBox(
-                url: product.imageUrl,
-                height: 110,
-                width: 160,
+              child: Stack(
+                children: [
+                  NetworkImageBox(
+                    url: product.imageUrl,
+                    height: 110,
+                    width: 160,
+                  ),
+                  if (product.hasDiscount)
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: ProductDiscountBadge(
+                        discountPercent: product.discountPercent,
+                      ),
+                    ),
+                ],
               ),
             ),
             Padding(
@@ -665,13 +711,10 @@ class _ProductCard extends StatelessWidget {
                     style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
                   ),
                   const SizedBox(height: 6),
-                  Text(
-                    rupiah(product.price),
-                    style: const TextStyle(
-                      color: Color(0xFF00880F),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
+                  ProductPriceText(
+                    originalPriceText: rupiah(product.price),
+                    finalPriceText: rupiah(product.discountedPrice),
+                    hasDiscount: product.hasDiscount,
                   ),
                 ],
               ),
@@ -711,12 +754,13 @@ class _ServicePromoCard extends StatelessWidget {
           width: 46,
           height: 46,
           decoration: BoxDecoration(
-            color: const Color(0xFF00880F).withValues(alpha: 0.1),
+            color: AppColors.primaryLight,
             borderRadius: BorderRadius.circular(14),
           ),
           child: const Icon(
-            Icons.home_repair_service_outlined,
-            color: Color(0xFF00880F),
+            Symbols.home_repair_service_rounded,
+            fill: 1,
+            color: AppColors.primaryDark,
             size: 24,
           ),
         ),
@@ -728,7 +772,10 @@ class _ServicePromoCard extends StatelessWidget {
           'Temukan mitra jasa lokal di zona Anda.',
           style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
         ),
-        trailing: const Icon(Icons.chevron_right, color: Color(0xFF00880F)),
+        trailing: const Icon(
+          Symbols.chevron_right_rounded,
+          color: AppColors.primaryDark,
+        ),
         onTap: () => Navigator.push(
           context,
           MaterialPageRoute(

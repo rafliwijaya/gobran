@@ -109,7 +109,12 @@ class _ServiceOrders extends StatelessWidget {
       isEmpty: (items) => items.isEmpty,
       emptyMessage: 'Belum ada permintaan jasa.',
       builder: (items) => ListView.separated(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.fromLTRB(
+          16,
+          16,
+          16,
+          24 + bottomSystemInset(context),
+        ),
         itemCount: items.length,
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
@@ -182,7 +187,12 @@ class _ListingManager extends StatelessWidget {
                   child: Text('Belum ada layanan. Tekan + untuk menambahkan.'),
                 )
               : ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
+                  padding: EdgeInsets.fromLTRB(
+                    16,
+                    16,
+                    16,
+                    96 + bottomSystemInset(context),
+                  ),
                   itemCount: items.length,
                   separatorBuilder: (_, _) => const SizedBox(height: 10),
                   itemBuilder: (context, index) {
@@ -227,7 +237,7 @@ class _ListingManager extends StatelessWidget {
       ),
       Positioned(
         right: 18,
-        bottom: 18,
+        bottom: 18 + bottomSystemInset(context),
         child: FloatingActionButton.extended(
           heroTag: 'add_service',
           onPressed: () => _editListing(context, user),
@@ -248,8 +258,13 @@ Future<void> _editListing(
   final description = TextEditingController(text: item?.description);
   final category = TextEditingController(text: item?.category);
   final price = TextEditingController(text: item?.estimatedPrice.toString());
+  final existingUrl = item?.imageUrl ?? '';
+  final imageUrlInput = TextEditingController(
+    text: existingUrl.startsWith('http') ? existingUrl : '',
+  );
   XFile? image;
   var loading = false;
+  String? errorMessage;
   await showDialog<void>(
     context: context,
     barrierDismissible: false,
@@ -283,17 +298,49 @@ Future<void> _editListing(
               ),
               const SizedBox(height: 9),
               OutlinedButton.icon(
-                onPressed: () async {
-                  final selected = await ImagePicker().pickImage(
-                    source: ImageSource.gallery,
-                    imageQuality: 80,
-                    maxWidth: 1600,
-                  );
-                  if (selected != null) setState(() => image = selected);
-                },
+                onPressed: loading
+                    ? null
+                    : () async {
+                        final selected = await ImagePicker().pickImage(
+                          source: ImageSource.gallery,
+                          imageQuality: 58,
+                          maxWidth: 720,
+                        );
+                        if (selected != null) {
+                          setState(() {
+                            image = selected;
+                            errorMessage = null;
+                          });
+                        }
+                      },
                 icon: const Icon(Icons.add_photo_alternate_outlined),
-                label: Text(image?.name ?? 'Pilih/ganti foto'),
+                label: Text(
+                  image?.name ??
+                      (existingUrl.isNotEmpty
+                          ? 'Ganti foto dari galeri'
+                          : 'Pilih foto dari galeri'),
+                ),
               ),
+              const SizedBox(height: 9),
+              TextField(
+                controller: imageUrlInput,
+                keyboardType: TextInputType.url,
+                decoration: const InputDecoration(
+                  labelText: 'Atau tempel URL foto (opsional)',
+                  hintText: 'https://...',
+                ),
+              ),
+              if (existingUrl.startsWith('data:image/') && image == null) ...[
+                const SizedBox(height: 6),
+                const Text(
+                  'Foto tersimpan aktif. Pilih foto baru atau isi URL untuk mengganti.',
+                  style: TextStyle(fontSize: 11, color: Colors.grey),
+                ),
+              ],
+              if (errorMessage != null) ...[
+                const SizedBox(height: 10),
+                FormErrorBox(message: errorMessage!),
+              ],
             ],
           ),
         ),
@@ -306,13 +353,21 @@ Future<void> _editListing(
             onPressed: loading
                 ? null
                 : () async {
-                    if (name.text.trim().isEmpty ||
-                        int.tryParse(price.text) == null) {
+                    final parsedPrice = int.tryParse(price.text.trim());
+                    if (name.text.trim().isEmpty || parsedPrice == null) {
+                      setState(
+                        () => errorMessage =
+                            'Nama layanan dan estimasi harga (angka) wajib diisi.',
+                      );
                       return;
                     }
-                    setState(() => loading = true);
+                    setState(() {
+                      loading = true;
+                      errorMessage = null;
+                    });
                     try {
-                      var imageUrl = item?.imageUrl ?? '';
+                      final typedUrl = imageUrlInput.text.trim();
+                      var imageUrl = typedUrl.isNotEmpty ? typedUrl : existingUrl;
                       if (image != null) {
                         imageUrl = await FirestoreService().uploadImage(
                           image!,
@@ -324,18 +379,20 @@ Future<void> _editListing(
                         partner: user,
                         name: name.text,
                         description: description.text,
-                        category: category.text.isEmpty
+                        category: category.text.trim().isEmpty
                             ? 'Lainnya'
-                            : category.text,
-                        estimatedPrice: int.parse(price.text),
+                            : category.text.trim(),
+                        estimatedPrice: parsedPrice,
                         imageUrl: imageUrl,
                       );
                       if (dialogContext.mounted) Navigator.pop(dialogContext);
                     } catch (e) {
                       if (context.mounted) {
-                        showMessage(context, '$e', error: true);
+                        setState(() {
+                          loading = false;
+                          errorMessage = '$e';
+                        });
                       }
-                      setState(() => loading = false);
                     }
                   },
             child: loading
@@ -353,4 +410,5 @@ Future<void> _editListing(
   description.dispose();
   category.dispose();
   price.dispose();
+  imageUrlInput.dispose();
 }

@@ -27,10 +27,13 @@ service cloud.firestore {
       allow create: if signedIn() && request.auth.uid == uid;
       allow update: if admin() ||
         (signedIn() && request.auth.uid == uid && me().role == 'driver') ||
-        (signedIn() && me().role == 'customer' &&
+        (signedIn() && me().role in ['customer', 'umkm'] &&
          request.resource.data.current_order_id == '' &&
          resource.data.current_order_id != '' &&
-         get(/databases/$(database)/documents/orders/$(resource.data.current_order_id)).data.customer_id == request.auth.uid &&
+         ((me().role == 'customer' &&
+           get(/databases/$(database)/documents/orders/$(resource.data.current_order_id)).data.customer_id == request.auth.uid) ||
+          (me().role == 'umkm' &&
+           get(/databases/$(database)/documents/orders/$(resource.data.current_order_id)).data.merchant_id == request.auth.uid)) &&
          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['current_order_id']));
       allow delete: if admin();
     }
@@ -72,20 +75,24 @@ service cloud.firestore {
          resource.data.zone_id == me().zone_id && resource.data.status == 'searching')
       ));
       allow update: if admin() || (signedIn() && (
-        // Pelanggan: batalkan order, konfirmasi driver, atau tolak driver ke status searching
+        // Pelanggan: batalkan order (untuk food hanya saat waiting_merchant), konfirmasi driver, atau tolak driver
         (resource.data.customer_id == request.auth.uid &&
          request.resource.data.status in ['cancelled', 'driver_confirmed', 'searching'] &&
-         ((resource.data.status in ['searching', 'waiting_merchant', 'waiting_partner'] && request.resource.data.status == 'cancelled') ||
-          (resource.data.status == 'pending_confirmation' && request.resource.data.status in ['cancelled', 'driver_confirmed', 'searching']) ||
-          (resource.data.status == 'heading_to_pickup' && request.resource.data.status == 'cancelled')) &&
+         ((resource.data.status in ['waiting_partner', 'waiting_merchant'] && request.resource.data.status == 'cancelled') ||
+          (resource.data.service_type != 'food' &&
+           ((resource.data.status == 'searching' && request.resource.data.status == 'cancelled') ||
+            (resource.data.status == 'pending_confirmation' && request.resource.data.status in ['cancelled', 'driver_confirmed', 'searching']) ||
+            (resource.data.status == 'heading_to_pickup' && request.resource.data.status == 'cancelled')))) &&
          onlyChanged(['status', 'updated_at', 'confirmed_at', 'rejected_driver_ids', 'driver_id', 'driver_name', 'driver_phone', 'driver_photo_url'])) ||
         
-        // Driver: mengambil order (searching -> pending_confirmation)
+        // Driver: mengambil order (food langsung driver_confirmed, lainnya pending_confirmation)
         (me().role == 'driver' && me().verification_status == 'approved' &&
          resource.data.zone_id == me().zone_id && resource.data.status == 'searching' &&
-         request.resource.data.driver_id == request.auth.uid && request.resource.data.status == 'pending_confirmation' &&
+         request.resource.data.driver_id == request.auth.uid &&
+         ((resource.data.service_type == 'food' && request.resource.data.status == 'driver_confirmed') ||
+          (resource.data.service_type != 'food' && request.resource.data.status == 'pending_confirmation')) &&
          getAfter(/databases/$(database)/documents/drivers/$(request.auth.uid)).data.current_order_id == request.resource.id &&
-         onlyChanged(['driver_id', 'driver_name', 'driver_photo_url', 'driver_phone', 'status', 'accepted_at', 'updated_at'])) ||
+         onlyChanged(['driver_id', 'driver_name', 'driver_photo_url', 'driver_phone', 'status', 'accepted_at', 'confirmed_at', 'updated_at'])) ||
         
         // Driver: melanjutkan update status perjalanan
         (resource.data.driver_id == request.auth.uid &&
@@ -100,7 +107,11 @@ service cloud.firestore {
          onlyChanged(['status', 'updated_at', 'completed_at'])) ||
          
         (resource.data.merchant_id == request.auth.uid && me().role == 'umkm' &&
-         onlyChanged(['status', 'updated_at', 'completed_at'])) ||
+         (request.resource.data.status != 'cancelled' ||
+          (resource.data.status in ['waiting_merchant', 'searching'] && resource.data.driver_id == '')) &&
+         (request.resource.data.meta.get('merchant_stage', '') != 'handed_over' ||
+          resource.data.driver_id != '') &&
+         onlyChanged(['status', 'meta', 'updated_at', 'completed_at'])) ||
         (resource.data.partner_id == request.auth.uid && me().role == 'service' &&
          onlyChanged(['status', 'updated_at', 'completed_at']))
       ));

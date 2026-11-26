@@ -72,7 +72,7 @@ class _SplashScreenState extends State<_SplashScreen>
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Color(0xFF00880F), Color(0xFF006B0C)],
+            colors: [Color(0xFFA3E635), Color(0xFF70AB13)],
           ),
         ),
         child: Center(
@@ -99,7 +99,7 @@ class _SplashScreenState extends State<_SplashScreen>
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(32),
                       child: Image.asset(
-                        'web/icons/loding.png',
+                        'web/icons/bran.jpeg',
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -140,10 +140,14 @@ class _SignedInRouterState extends State<_SignedInRouter> {
     return StreamBuilder<AppUser?>(
       stream: FirestoreService().watchCurrentUser(),
       builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const _SplashScreen();
+        }
+
         if (snapshot.hasError) {
           return _AccountProblem(message: '${snapshot.error}');
         }
-        if (!snapshot.hasData) return const _SplashScreen();
+
         final user = snapshot.data;
         if (user == null) {
           return const _AccountProblem(

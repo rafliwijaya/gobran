@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 
+import '../../core/app_theme.dart';
 import '../../core/common_widgets.dart';
 import '../../core/formatters.dart';
 import '../../models/app_models.dart';
@@ -162,128 +163,20 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
   Future<void> _importFromGoogleMapsLink(String url) async {
     setState(() => _loadingRoute = true);
     try {
-      String resolvedUrl = url;
-      if (url.contains('maps.app.goo.gl') || url.contains('goo.gl/maps')) {
-        resolvedUrl = await _location.resolveRedirect(url);
-      }
-
-      LatLng? pickupPoint;
-      LatLng? destinationPoint;
-
-      // 1. Try to extract start/pickup coordinates from '/dir/lat,lon'
-      final startDirRegex = RegExp(r'/dir/(-?\d+\.\d+),(-?\d+\.\d+)');
-      final startDirMatch = startDirRegex.firstMatch(resolvedUrl);
-      if (startDirMatch != null) {
-        pickupPoint = LatLng(
-          double.parse(startDirMatch.group(1)!),
-          double.parse(startDirMatch.group(2)!),
-        );
-      }
-
-      // 2. Try to extract destination coordinates from the second part of '/dir/...'
-      // e.g. /dir/lat,lon/lat,lon or /dir/My+Location/lat,lon
-      final destDirRegex = RegExp(r'/dir/[^/]+/(-?\d+\.\d+),(-?\d+\.\d+)');
-      final destDirMatch = destDirRegex.firstMatch(resolvedUrl);
-      if (destDirMatch != null) {
-        destinationPoint = LatLng(
-          double.parse(destDirMatch.group(1)!),
-          double.parse(destDirMatch.group(2)!),
-        );
-      }
-
-      // 3. Fallback: Parse embedded 'data' coordinates if destination is not found yet
-      // (very common when destinations are places/businesses, e.g. SMA Negeri 1 Babalan)
-      if (destinationPoint == null) {
-        final latMatch = RegExp(r'!3d(-?\d+\.\d+)').firstMatch(resolvedUrl);
-        final lonMatch = RegExp(r'!4d(-?\d+\.\d+)').firstMatch(resolvedUrl);
-        if (latMatch != null && lonMatch != null) {
-          destinationPoint = LatLng(
-            double.parse(latMatch.group(1)!),
-            double.parse(lonMatch.group(1)!),
-          );
-        }
-      }
-
-      // 4. Try standard query/params fallback
-      if (pickupPoint == null) {
-        final saddrRegex = RegExp(r'[?&]saddr=(-?\d+\.\d+),(-?\d+\.\d+)');
-        final sMatch = saddrRegex.firstMatch(resolvedUrl);
-        if (sMatch != null) {
-          pickupPoint = LatLng(
-            double.parse(sMatch.group(1)!),
-            double.parse(sMatch.group(2)!),
-          );
-        }
-      }
-      if (destinationPoint == null) {
-        final daddrRegex = RegExp(r'[?&]daddr=(-?\d+\.\d+),(-?\d+\.\d+)');
-        final dMatch = daddrRegex.firstMatch(resolvedUrl);
-        if (dMatch != null) {
-          destinationPoint = LatLng(
-            double.parse(dMatch.group(1)!),
-            double.parse(dMatch.group(2)!),
-          );
-        }
-      }
-
-      // 5. Place/query or @ lat,lon fallback
-      if (destinationPoint == null) {
-        final placeRegex = RegExp(r'/place/(-?\d+\.\d+),(-?\d+\.\d+)');
-        final placeMatch = placeRegex.firstMatch(resolvedUrl);
-        if (placeMatch != null) {
-          destinationPoint = LatLng(
-            double.parse(placeMatch.group(1)!),
-            double.parse(placeMatch.group(2)!),
-          );
-        }
-      }
-      if (destinationPoint == null) {
-        final qRegex = RegExp(r'[?&](query|q)=(-?\d+\.\d+),(-?\d+\.\d+)');
-        final qMatch = qRegex.firstMatch(resolvedUrl);
-        if (qMatch != null) {
-          destinationPoint = LatLng(
-            double.parse(qMatch.group(2)!),
-            double.parse(qMatch.group(3)!),
-          );
-        }
-      }
-      if (destinationPoint == null) {
-        final atRegex = RegExp(r'@(-?\d+\.\d+),(-?\d+\.\d+)');
-        final atMatch = atRegex.firstMatch(resolvedUrl);
-        if (atMatch != null) {
-          destinationPoint = LatLng(
-            double.parse(atMatch.group(1)!),
-            double.parse(atMatch.group(2)!),
-          );
-        }
-      }
-
-      // 6. If pickup is My+Location, use current GPS coordinates
-      if (pickupPoint == null &&
-          (resolvedUrl.contains('/dir/My+Location') ||
-              resolvedUrl.contains('/dir/Lokasi+Saya'))) {
-        try {
-          pickupPoint = await _location.currentLocation();
-        } catch (_) {}
-      }
-
-      if (pickupPoint == null && destinationPoint == null) {
-        throw Exception('Link tidak valid atau koordinat tidak ditemukan.');
-      }
-
-      if (pickupPoint != null) {
-        final address = await _location.reverseGeocode(pickupPoint);
+      final parsed = await _location.parseGoogleMapsLink(url);
+      if (parsed.pickup != null) {
+        final address = await _location.reverseGeocode(parsed.pickup!);
         _pickup = AddressPoint(
-          latitude: pickupPoint.latitude,
-          longitude: pickupPoint.longitude,
+          latitude: parsed.pickup!.latitude,
+          longitude: parsed.pickup!.longitude,
           address: address,
         );
       }
-      if (destinationPoint != null) {
-        final address = await _location.reverseGeocode(destinationPoint);
+      if (parsed.destination != null) {
+        final address = await _location.reverseGeocode(parsed.destination!);
         _destination = AddressPoint(
-          latitude: destinationPoint.latitude,
-          longitude: destinationPoint.longitude,
+          latitude: parsed.destination!.latitude,
+          longitude: parsed.destination!.longitude,
           address: address,
         );
       }
@@ -295,7 +188,7 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
       }
 
       setState(() {
-        _showCenterPin = false; // Hide center pin since both are set from link
+        _showCenterPin = false;
       });
 
       await _calculateRoute();
@@ -470,8 +363,8 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                         right: 60, // Avoid current location FAB overlapping
                         child: ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF00880F),
-                            foregroundColor: Colors.white,
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: AppColors.ink,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(10),
                             ),
@@ -534,7 +427,12 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                   clipBehavior: Clip.antiAlias,
                   child: ListView(
                     controller: scrollController,
-                    padding: const EdgeInsets.fromLTRB(18, 12, 18, 32),
+                    padding: EdgeInsets.fromLTRB(
+                      18,
+                      12,
+                      18,
+                      28 + bottomSystemInset(context),
+                    ),
                     children: [
                       Center(
                         child: Container(
@@ -553,11 +451,11 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                           // Paste Google Maps Link Card
                           Card(
                             elevation: 0,
-                            color: const Color(0xFFF0FDF4),
+                            color: AppColors.primaryLight,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                               side: const BorderSide(
-                                color: Color(0xFF00880F),
+                                color: AppColors.primaryDark,
                                 width: 0.8,
                               ),
                             ),
@@ -574,7 +472,7 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                     style: TextStyle(
                                       fontWeight: FontWeight.bold,
                                       fontSize: 13,
-                                      color: Color(0xFF00880F),
+                                      color: AppColors.primaryDark,
                                     ),
                                   ),
                                   const SizedBox(height: 8),
@@ -633,11 +531,11 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                     ),
                                     decoration: BoxDecoration(
                                       color: _editingPickup
-                                          ? const Color(0xFFF0FDF4)
+                                          ? AppColors.primaryLight
                                           : Colors.white,
                                       border: Border.all(
                                         color: _editingPickup
-                                            ? const Color(0xFF00880F)
+                                            ? AppColors.primaryDark
                                             : Colors.grey.shade300,
                                         width: 1.5,
                                       ),
@@ -648,7 +546,7 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                         Icon(
                                           Icons.trip_origin,
                                           color: _editingPickup
-                                              ? const Color(0xFF00880F)
+                                              ? AppColors.primaryDark
                                               : Colors.grey,
                                           size: 20,
                                         ),
@@ -659,7 +557,7 @@ class _OrderFlowScreenState extends State<OrderFlowScreen> {
                                             fontWeight: FontWeight.bold,
                                             fontSize: 12,
                                             color: _editingPickup
-                                                ? const Color(0xFF00880F)
+                                                ? AppColors.primaryDark
                                                 : Colors.grey.shade700,
                                           ),
                                         ),
